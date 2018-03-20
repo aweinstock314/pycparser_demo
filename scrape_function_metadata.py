@@ -1,7 +1,9 @@
 #!/usr/bin/env python2
 import pycparser.c_ast
 import pycparser.c_parser
+import copy
 
+give_small_output=True
 ast = pycparser.c_parser.CParser().parse(open("foo.c.preprocessed").read())
 
 #ast.show()
@@ -22,7 +24,12 @@ def typetorepr(node, word_size=8):
     if isinstance(node, pycparser.c_ast.ArrayDecl):
         ty, sz = typetorepr(node.type, word_size)
         n = int(node.dim.value, 10)
-        return (['array', (ty, sz), n], n*sz)
+        if (give_small_output):
+            return (['array', (ty, sz), n], n*sz)
+        else:
+            return (['array',
+                    {"type":"array", "name":node.type.declname , "type_of_array_element":(ty, sz), "num_of_array_elements:":n, "size":n*sz , "pycparser_ast":copy.deepcopy(node)}],
+                    n*sz)
     if isinstance(node, pycparser.c_ast.Struct):
         types = []
         size = 0
@@ -30,7 +37,12 @@ def typetorepr(node, word_size=8):
             ty, sz = typetorepr(decl)
             types.append((ty, sz))
             size += sz
-        return (['struct', node.name, types], size)
+        if (give_small_output):
+            return (['struct', node.name, types], size)
+        else:
+            return (['struct',
+                    {"type":"struct", "name":node.name,  "size":size,  "struct_elements":types ,"pycparser_ast":copy.deepcopy(node)}], 
+                    size)
     if isinstance(node, pycparser.c_ast.PtrDecl):
         return (['pointer', typetorepr(node.type)], word_size)
     if isinstance(node, pycparser.c_ast.IdentifierType):
