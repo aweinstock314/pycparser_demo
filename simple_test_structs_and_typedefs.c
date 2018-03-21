@@ -18,6 +18,7 @@ struct lol
     int* m;
     char c[10];
 	char d[x];
+	char* e[5];
 } *haha;
 
 struct lol hehe;
