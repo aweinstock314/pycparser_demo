@@ -69,11 +69,17 @@ def typetorepr(node, word_size=8,**kwargs):
         size = {
             'void': 0,
             'float': 4,
-            'double': 8, 
+            'double': 8,
+            'long':8, 
             'int': 4,
             'char': 1,
             }[name]
-        return (name, size)
+        if (give_small_output):
+            return (name, size)
+        else:
+            return ([name,
+                    {"type":name, "size":size , "pycparser_ast":copy.deepcopy(node)}],
+                    size)
 
     if isinstance(node, pycparser.c_ast.FuncDecl):
         ty = node.type
