@@ -5,11 +5,6 @@ import sys
 sys.dont_write_bytecode = True #we don't want these .pyc files!
 
 
-from helper_functions_by_pycparser import *
-
-
-
-
 RE_CHILD_ARRAY = re.compile(r'(.*)\[(.*)\]')
 RE_INTERNAL_ATTR = re.compile('__.*__')
 

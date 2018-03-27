@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 import pycparser.c_ast
 import pycparser.c_parser
 import copy
@@ -83,24 +83,34 @@ def typetorepr(node, word_size=8,**kwargs):
 
     if isinstance(node, pycparser.c_ast.FuncDecl):
         ty = node.type
-        return (['function', [typetorepr(arg,**kwargs) for arg in listify(node.args)], typetorepr(node.type, word_size,**kwargs)], None)
-    
+        return_value_parse=typetorepr(node.type, word_size,**kwargs)
+        list_with_arguments_parse=[typetorepr(arg,**kwargs) for arg in listify(node.args)]
+        if (give_small_output):
+            return (['function',list_with_arguments_parse , return_value_parse], None)
+        else:
+            return (['function decl',
+                    {"type":"function decl", "name":get_name_of_a_node(parent_node) , "list_of_arguments":list_with_arguments_parse, "return_value":return_value_parse , "pycparser_ast":copy.deepcopy(node)}],
+                    None)
+        
     if isinstance(node, (pycparser.c_ast.Decl, pycparser.c_ast.TypeDecl, pycparser.c_ast.Typename)):
         kwargs["ast_of_last_decl"]=node
         return typetorepr(node.type,**kwargs)
     node.show()
-    assert False, 'Unhandled type %r %r %r' % (type(node), dictify(node), dir(node))
+    assert(False, 'Unhandled type %r %r %r' % (type(node), dictify(node), dir(node)))
 
 function_types = dict()
+kwargs=dict()
 
 for node in listify(ast):
+    kwargs["parent_node"]=node
     if isinstance(node, pycparser.c_ast.Decl):
-        function_types[node.name] = typetorepr(node)
-        print node.name
-        print '\t', typetorepr(node)
+        function_types[node.name] = typetorepr(node,**kwargs)
+        print (node.name)
+        print ('\t', typetorepr(node,**kwargs))
     if isinstance(node, pycparser.c_ast.FuncDef):
-        function_types[node.decl.name] = typetorepr(node.decl.type)
-        print node.decl.name
-        print '\t', typetorepr(node.decl.type)
+        name_of_fun=node.decl.name
+        function_types[name_of_fun] = {"fun_decl":typetorepr(node.decl,**kwargs), "fun_locals":None } #to be updated
+        print(name_of_fun)
+        print ('\t', function_types[name_of_fun])
 
-print function_types
+print(function_types)
