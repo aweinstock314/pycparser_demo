@@ -94,22 +94,30 @@ def typetorepr(node, word_size=8,**kwargs):
         
     if isinstance(node, (pycparser.c_ast.Decl, pycparser.c_ast.TypeDecl, pycparser.c_ast.Typename)):
         kwargs["ast_of_last_decl"]=node
-        return typetorepr(node.type,**kwargs)
+        retval=typetorepr(node.type,**kwargs)
+        if isinstance(node, (pycparser.c_ast.Decl)):
+            decls_to_gather.append(retval)
+        return retval
+    
     node.show()
     assert(False, 'Unhandled type %r %r %r' % (type(node), dictify(node), dir(node)))
 
 function_types = dict()
 kwargs=dict()
+decls_to_gather=[]
 
 for node in listify(ast):
     kwargs["parent_node"]=node
     if isinstance(node, pycparser.c_ast.Decl):
+        decls_to_gather=[]
         function_types[node.name] = typetorepr(node,**kwargs)
         print (node.name)
         print ('\t', typetorepr(node,**kwargs))
     if isinstance(node, pycparser.c_ast.FuncDef):
         name_of_fun=node.decl.name
-        function_types[name_of_fun] = {"fun_decl":typetorepr(node.decl,**kwargs), "fun_locals":None } #to be updated
+        decls_to_gather=[]
+        local_vars=[typetorepr(local,**kwargs) for local in node.body.block_items if isinstance(local, (pycparser.c_ast.Decl))]
+        function_types[name_of_fun] = {"fun_decl":typetorepr(node.decl,**kwargs), "fun_locals":local_vars }
         print(name_of_fun)
         print ('\t', function_types[name_of_fun])
 
