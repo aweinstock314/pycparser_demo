@@ -1,4 +1,4 @@
 ast_of_original_c_code
 *.pyc
 a.out
-tmptmp
+tmptmp*

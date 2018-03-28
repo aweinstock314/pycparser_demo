@@ -10,7 +10,12 @@ from helper_functions_by_pycparser import *
 from our_helper_functions import *
 
 give_small_output=True
-ast = pycparser.c_parser.CParser().parse(open("foo.c.preprocessed").read())
+
+if len(sys.argv)!=2:
+    print("Usage: "+sys.argv[0]+" <c_program_to_parse>")
+    sys.exit(-1)
+
+ast = pycparser.c_parser.CParser().parse(open(sys.argv[1]).read())
 
 #ast.show()
 
@@ -114,14 +119,14 @@ def typetorepr(node, word_size=8,**kwargs):
     assert False, 'Unhandled type %r %r %r' % (type(node), dictify(node), dir(node))
 
 function_types = dict()
+global_decls=[]
 kwargs=dict()
 decls_to_gather=[]
 
 for node in listify(ast):
     kwargs["parent_node"]=node
     if isinstance(node, pycparser.c_ast.Decl):
-        decls_to_gather=[]
-        function_types[node.name] = typetorepr(node,**kwargs)
+        global_decls.append(typetorepr(node,**kwargs))
         print (node.name)
         print ('\t', typetorepr(node,**kwargs))
     if isinstance(node, pycparser.c_ast.FuncDef):
@@ -132,4 +137,7 @@ for node in listify(ast):
         print(name_of_fun)
         print ('\t', function_types[name_of_fun])
 
+print("FUNCTIONS:")
 print(function_types)
+print("GLOBAL DECLS:")
+print(global_decls)
