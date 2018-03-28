@@ -28,8 +28,17 @@ def access(node, *path):
 
 def typetorepr(node, word_size=8,**kwargs):
     ast_of_last_decl=kwargs.get("ast_of_last_decl",None) #get the ast of the last Decl/TypeDecl/Typename
+    ast_of_last_decl_init=kwargs.get("ast_of_last_decl_init",None) #get the ast of the last Decl init block
     parent_node=kwargs.get("parent_node",None) #grab a pointer to our parent node
-    kwargs["parent_node"]=node #and set ourselves as the parent node
+
+    kwargs["parent_node"]=node #set ourselves as the parent node
+    
+    if (isinstance(node,pycparser.c_ast.TypeDecl) #NOT A GOOD WAY to check, we need to do something better than this
+        and isinstance(node.type,pycparser.c_ast.IdentifierType)):
+        #the idea here is that we need to transfer the init block from the last Decl. We should cancel what we got for our children, EXCEPT if we are a TypeDecl (and followed by an Identifier)
+        pass    
+    else:
+        kwargs["ast_of_last_decl_init"]=None # cancel the last decl init
 
     if isinstance(node, pycparser.c_ast.ArrayDecl):
         ty, sz = typetorepr(node.type, word_size,**kwargs)
@@ -38,7 +47,7 @@ def typetorepr(node, word_size=8,**kwargs):
             return (['array', (ty, sz), n], n*sz)
         else:
             return (['array',
-                    {"type":"array", "name":get_name_of_a_node(parent_node) , "type_of_array_element":(ty, sz), "num_of_array_elements:":n, "size":n*sz , "pycparser_ast":copy.deepcopy(node)}],
+                    {"type":"array", "name":get_name_of_a_node(parent_node) , "type_of_array_element":(ty, sz), "num_of_array_elements:":n, "size":n*sz , "init":ast_of_last_decl_init,"pycparser_ast":copy.deepcopy(node)}],
                     n*sz)
     
     if isinstance(node, pycparser.c_ast.Struct):
@@ -60,7 +69,7 @@ def typetorepr(node, word_size=8,**kwargs):
             return (['pointer', typetorepr(node.type,**kwargs)], word_size)
         else:
             return (['pointer',
-                    {"type":"pointer", "name":get_name_of_a_node(parent_node) , "type_of_pointed_element":typetorepr(node.type,**kwargs), "size":word_size , "pycparser_ast":copy.deepcopy(node)}],
+                    {"type":"pointer", "name":get_name_of_a_node(parent_node) , "type_of_pointed_element":typetorepr(node.type,**kwargs), "size":word_size , "init":ast_of_last_decl_init, "pycparser_ast":copy.deepcopy(node)}],
                     word_size)
 
     if isinstance(node, pycparser.c_ast.IdentifierType):
@@ -78,7 +87,7 @@ def typetorepr(node, word_size=8,**kwargs):
             return (name, size)
         else:
             return ([name,
-                    {"type":name, "size":size , "pycparser_ast":copy.deepcopy(node)}],
+                    {"type":name, "size":size , "init":ast_of_last_decl_init, "pycparser_ast":copy.deepcopy(node)}],
                     size)
 
     if isinstance(node, pycparser.c_ast.FuncDecl):
@@ -94,13 +103,15 @@ def typetorepr(node, word_size=8,**kwargs):
         
     if isinstance(node, (pycparser.c_ast.Decl, pycparser.c_ast.TypeDecl, pycparser.c_ast.Typename)):
         kwargs["ast_of_last_decl"]=node
+        if isinstance(node, (pycparser.c_ast.Decl)):
+            kwargs["ast_of_last_decl_init"]=copy.deepcopy(node.init)
         retval=typetorepr(node.type,**kwargs)
         if isinstance(node, (pycparser.c_ast.Decl)):
             decls_to_gather.append(retval)
         return retval
     
     node.show()
-    assert(False, 'Unhandled type %r %r %r' % (type(node), dictify(node), dir(node)))
+    assert False, 'Unhandled type %r %r %r' % (type(node), dictify(node), dir(node))
 
 function_types = dict()
 kwargs=dict()
