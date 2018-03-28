@@ -17,8 +17,8 @@ struct lol
     int b;
     int* m;
     char c[10];
-	char d[x];
 	char* e[5];
+	char d[];
 } *haha;
 
 struct lol hehe;
@@ -47,4 +47,10 @@ struct ll
 int z[10];
 
 struct lol * muahaha;
+
+int main()
+{
+	char d[x];
+	return 0;
+}
 
