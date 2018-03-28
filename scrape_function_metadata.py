@@ -51,7 +51,7 @@ def typetorepr(node, word_size=8,**kwargs):
         if RepresentsInt(get_original_C_code_of_ast(node.dim)):
             n = int(node.dim.value, 10)
         else:
-            n=-42424242424242 #dirty way to denote "variable size"
+            n = 'VARIABLE_SIZE'
         if (give_small_output):
             return (['array', (ty, sz), n], n*sz)
         else:
