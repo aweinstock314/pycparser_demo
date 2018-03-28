@@ -62,12 +62,15 @@ def typetorepr(node, word_size=8,**kwargs):
             ty, sz = typetorepr(decl,**kwargs)
             types.append((ty, sz))
             size += sz
+       
         if (give_small_output):
-            return (['struct', node.name, types], size)
+            retval=(['struct', node.name, types], size)
         else:
-            return (['struct',
+            retval= (['struct',
                     {"type":"struct", "name":node.name,  "size":size,  "struct_elements":types ,"pycparser_ast":copy.deepcopy(node)}], 
                     size)
+        all_structs_dict[node.name]=retval #add it to the all structs dict as well
+        return retval
 
     if isinstance(node, pycparser.c_ast.PtrDecl):
         if (give_small_output):
@@ -80,14 +83,7 @@ def typetorepr(node, word_size=8,**kwargs):
     if isinstance(node, pycparser.c_ast.IdentifierType):
         assert len(node.names) == 1
         name = node.names[0]
-        size = {
-            'void': 0,
-            'float': 4,
-            'double': 8,
-            'long':8, 
-            'int': 4,
-            'char': 1,
-            }[name]
+        size = get_size_of_type(name,typedefs)
         if (give_small_output):
             return (name, size)
         else:
@@ -122,9 +118,14 @@ function_types = dict()
 global_decls=[]
 kwargs=dict()
 decls_to_gather=[]
+typedefs=dict()
+all_structs_dict=dict()
 
 for node in listify(ast):
     kwargs["parent_node"]=node
+    if isinstance(node, pycparser.c_ast.Typedef):
+        name_of_typedef=node.name        
+        typedefs[name_of_typedef]=typetorepr(node.type,**kwargs)
     if isinstance(node, pycparser.c_ast.Decl):
         global_decls.append(typetorepr(node,**kwargs))
         print (node.name)
@@ -141,3 +142,7 @@ print("FUNCTIONS:")
 print(function_types)
 print("GLOBAL DECLS:")
 print(global_decls)
+print("TYPEDEFS:")
+print(typedefs)
+print("ALL STRUCTS DICT:")
+print(all_structs_dict)
