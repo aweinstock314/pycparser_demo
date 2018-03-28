@@ -15,7 +15,7 @@ if len(sys.argv)!=2:
     print("Usage: "+sys.argv[0]+" <c_program_to_parse>")
     sys.exit(-1)
 
-ast = pycparser.c_parser.CParser().parse(open(sys.argv[1]).read())
+ast = pycparser.parse_file(sys.argv[1],use_cpp=True)
 
 #ast.show()
 
