@@ -47,7 +47,11 @@ def typetorepr(node, word_size=8,**kwargs):
 
     if isinstance(node, pycparser.c_ast.ArrayDecl):
         ty, sz = typetorepr(node.type, word_size,**kwargs)
-        n = int(node.dim.value, 10)
+        #get the dimension of the array
+        if RepresentsInt(get_original_C_code_of_ast(node.dim)):
+            n = int(node.dim.value, 10)
+        else:
+            n=-42424242424242 #dirty way to denote "variable size"
         if (give_small_output):
             return (['array', (ty, sz), n], n*sz)
         else:
@@ -58,10 +62,12 @@ def typetorepr(node, word_size=8,**kwargs):
     if isinstance(node, pycparser.c_ast.Struct):
         types = []
         size = 0
-        for decl in node.decls:
-            ty, sz = typetorepr(decl,**kwargs)
-            types.append((ty, sz))
-            size += sz
+
+        if node.decls!=None: #a struct that has already been declared and referenced again (with "struct a b;") doe not have declarations
+            for decl in node.decls:
+                ty, sz = typetorepr(decl,**kwargs)
+                types.append((ty, sz))
+                size += sz
        
         if (give_small_output):
             retval=(['struct', node.name, types], size)
@@ -69,7 +75,8 @@ def typetorepr(node, word_size=8,**kwargs):
             retval= (['struct',
                     {"type":"struct", "name":node.name,  "size":size,  "struct_elements":types ,"pycparser_ast":copy.deepcopy(node)}], 
                     size)
-        all_structs_dict[node.name]=retval #add it to the all structs dict as well
+        if node.name not in all_structs_dict:        
+            all_structs_dict[node.name]=retval #add it to the all structs dict if it is not there
         return retval
 
     if isinstance(node, pycparser.c_ast.PtrDecl):

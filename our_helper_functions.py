@@ -1,6 +1,7 @@
 import re
 import pycparser
 import sys
+import copy
 
 from helper_functions_by_pycparser import *
 
@@ -59,7 +60,7 @@ def get_size_of_type(name,typedefs):
     if name in typedefs:
         (tpdf,sz)=typedefs[name]
         return sz
-    elif name in ['void','float','double','long','long int','int','char']:
+    elif name in ['void','float','double','long','long int','int','char','long double']:
         sz= {
             'void': 0,
             'float': 4,
@@ -68,9 +69,18 @@ def get_size_of_type(name,typedefs):
             'long int':8,
             'int': 4,
             'char': 1,
+            'long double':16 #careful: not supported yet
             }[name]
         return sz
     else:
         print("ERROR IN SIZE CALC")
         print(name)
         sys.exit(-1)
+
+
+
+def get_original_C_code_of_ast(ast):
+	new_ast = copy.deepcopy(ast)
+	generator = pycparser.c_generator.CGenerator() #that's the proper (pycparser) generator, not our custom
+	original_c_lines=generator.visit(new_ast)
+	return (original_c_lines)

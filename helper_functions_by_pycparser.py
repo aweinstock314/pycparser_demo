@@ -1,5 +1,5 @@
 import re
-import pycparser
+from pycparser import parse_file, c_ast, c_parser,c_generator
 import sys
 
 sys.dont_write_bytecode = True #we don't want these .pyc files!
