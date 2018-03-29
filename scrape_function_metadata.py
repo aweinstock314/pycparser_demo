@@ -3,6 +3,7 @@ import pycparser.c_ast
 import pycparser.c_parser
 import copy
 import sys
+import pickle
 
 sys.dont_write_bytecode = True #we don't want these .pyc files!
 
@@ -51,7 +52,7 @@ def typetorepr(node, word_size=8,**kwargs):
         if RepresentsInt(get_original_C_code_of_ast(node.dim)):
             n = int(node.dim.value, 10)
         else:
-            n = -42424242424242
+            n = -42424242424242 #denotes "variable size"
         if (give_small_output):
             return (['array', (ty, sz), n], n*sz)
         else:
@@ -153,3 +154,11 @@ print("TYPEDEFS:")
 print(typedefs)
 print("ALL STRUCTS DICT:")
 print(all_structs_dict)
+
+semantic_dict=dict()
+semantic_dict["functions"]=function_types
+semantic_dict["global_decls"]=global_decls
+semantic_dict["typedefs"]=typedefs
+semantic_dict["all_structs"]=all_structs_dict
+pickle.dump( semantic_dict, open( "semantic_data", "wb" ) )
+
