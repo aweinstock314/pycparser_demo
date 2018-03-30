@@ -676,15 +676,15 @@ class CustomCGenerator(object):
     def find_variable_in_fun_variables(self,name_of_function,name_of_var):
         #given a var name, returns its type and its corresponding dict. Searches in function params/locals
         function_dict=self.functions[name_of_function]
-        params_list=function_dict['params']
-        locals_list=function_dict['locals']
+        params_list=function_dict['fun_decl'][0][1]
+        locals_list=function_dict['fun_locals']
         for param in params_list:
-            if name_of_var==param['name']:
-                return (param['type']+"$$$$$$found_in_fun_params",param)
+            if name_of_var==param[0][1]['name']:
+                return ("found_in_fun_params,"param[0][1]['type'],param)
         for local in locals_list:
-            if name_of_var==local['name']:
-                return (local['type']+"$$$$$$found_in_fun_locals",local)
-        return ("variable_not_found_in_fun_vars",None)
+            if name_of_var==local[0][1]['name']:
+                return ("found_in_fun_locals",local[0][1]['type'],local)
+        return ("variable_not_found_in_fun_vars","variable_not_found_in_fun_vars",None)
         
     def find_variable_in_globals(self,name_of_var):    
         #!!!!!!!!!!!!!!! sos extend with structs+arrays. Now only supports simple global vars
@@ -706,19 +706,19 @@ class CustomCGenerator(object):
     def find_variable_in_fun_and_global_variables(self,name_of_function,name_of_var):
         #given a var name, returns where it was found + its type, and the corresponding dict.  Searches in function params/locals and then in globals
         function_dict=self.functions[name_of_function]
-        params_list=function_dict['params']
-        locals_list=function_dict['locals']
+        params_list=function_dict['fun_decl'][0][1]
+        locals_list=function_dict['fun_locals']
         global_decls=self.global_decls
         #!!!!!!!!!!!!!!! sos extend with structs+arrays. Now only supports simple global vars
-        (type_in_fun_vars,dict_of_var)=self.find_variable_in_fun_variables(name_of_function,name_of_var)
-        if (type_in_fun_vars=="variable_not_found_in_fun_vars"):
+        (where_found,type_in_fun_vars,tuple_of_var)=self.find_variable_in_fun_variables(name_of_function,name_of_var)
+        if (where_found=="variable_not_found_in_fun_vars"):
             (type_in_globals,dict_of_var)=self.find_variable_in_globals(name_of_var)
             if (type_in_globals=="variable_not_found_in_globals"):
-                return ("variable_was_not_found",None)
+                return ("variable_was_not_found","variable_was_not_found",None)
             else:
-                return (type_in_globals,dict_of_var)
+                return ("found_in_globals",type_in_globals,tuple_of_var)
         else:
-            return (type_in_fun_vars,dict_of_var)
+            return (where_found,type_in_fun_vars,tuple_of_var)
             
             
     def give_global_definition(self):

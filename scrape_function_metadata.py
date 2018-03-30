@@ -96,7 +96,7 @@ def typetorepr(node, word_size=8,**kwargs):
             return (name, size)
         else:
             return ([name,
-                    {"type":name, "size":size , "init":ast_of_last_decl_init, "pycparser_ast":copy.deepcopy(node)}],
+                    {"type":name, "name":get_name_of_a_node(parent_node),"size":size , "init":ast_of_last_decl_init, "pycparser_ast":copy.deepcopy(node)}],
                     size)
 
     if isinstance(node, pycparser.c_ast.FuncDecl):
