@@ -104,31 +104,35 @@ class CustomCGenerator(object):
         name_of_array=n.name.name
         is_global=0
         is_array=1 # might be a malloc'ed pointer which is accessed as array
-        #search in locals
-        (type_of_var,dict_of_array)=self.find_variable_in_fun_and_global_variables(self.name_of_fun_in_parsing,name_of_array)
+        #search in variables
+        (where_found,type_of_var,dict_of_array)=self.find_variable_in_fun_and_global_variables(self.name_of_fun_in_parsing,name_of_array)
         
         if (type_of_var=="variable_was_not_found"):
             #It might not be one of the secured variables, return what it would return normally
-            arrref = self._parenthesize_unless_simple(n.name) #kwargs?
-            return arrref + '[' + self.visit(n.subscript) + ']' #kwargs?
+            arrref = self._parenthesize_unless_simple(n.name,**kwargs) #kwargs? probably yes
+            return arrref + '[' + self.visit(n.subscript,**kwargs) + ']' #kwargs? probably yes
             
-        if type_of_var.split("$$$$$$")[1]=="found_in_globals":
+        if where_found=="found_in_globals":
             is_global=1
             
-        type_of_var_proper=type_of_var.split("$$$$$$")[0]
+        type_of_var_proper=type_of_var
         
         if type_of_var_proper=="array":
             type_of_array_var=dict_of_array['type_of_array_elem']
             is_array=1
-        else:
+        elif type_of_var_proper=="pointer":
             #it's a pointer that has been malloced and accessed as array?
             type_of_array_var=dict_of_array['type_of_pointed_elem']
             is_array=0
+        else:
+            print("Strange variable type!")
+            print(dict_of_array,n)
+            sys.exit(-1)
         
         
-        if (is_var_simple_var(type_of_array_var)==0):
+        if (is_typical_normal_var(type_of_var_proper[0][0])):
             print("ERROR: Not yet supported array subscript")
-            print(name_of_array,type_of_var,type_of_array_var)
+            print(name_of_array,type_of_var,type_of_array_var,dict_of_array,n)
             sys.exit(-1)
         
         if (use_setter):

@@ -51,6 +51,13 @@ struct lol * muahaha;
 int main()
 {
 	char d[x];
+	int n;
+
+	n=2;
+	d[1]='1';
+	d[n]=n;
+	d[d[n]]=n;
+	
 	return 0;
 }
 
