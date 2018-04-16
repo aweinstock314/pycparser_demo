@@ -10,7 +10,7 @@ sys.dont_write_bytecode = True #we don't want these .pyc files!
 from helper_functions_by_pycparser import *
 from our_helper_functions import *
 
-give_small_output=True
+give_small_output=False
 
 if len(sys.argv)!=2:
     print("Usage: "+sys.argv[0]+" <c_program_to_parse>")
@@ -146,14 +146,31 @@ for node in listify(ast):
         print(name_of_fun)
         print ('\t', function_types[name_of_fun])
 
-print("FUNCTIONS:")
-print(function_types)
-print("GLOBAL DECLS:")
-print(global_decls)
-print("TYPEDEFS:")
-print(typedefs)
-print("ALL STRUCTS DICT:")
-print(all_structs_dict)
+
+print("\nFUNCTIONS:\n")
+if (give_small_output):
+    print(function_types)
+else:
+    for x in function_types:
+        print(x," : ",function_types[x])
+print("\nGLOBAL DECLS:\n")
+if (give_small_output):
+    print(global_decls)
+else:
+    for x in global_decls:
+        print(x)
+print("\nTYPEDEFS:\n")
+if (give_small_output):
+    print(typedefs)
+else:
+    for x in typedefs:
+        print(x," : ",typedefs[x])
+print("\nALL STRUCTS DICT:\n")
+if (give_small_output):
+    print(all_structs_dict)
+else:
+    for x in all_structs_dict:
+        print(x," : ",all_structs_dict[x])
 
 semantic_dict=dict()
 semantic_dict["functions"]=function_types

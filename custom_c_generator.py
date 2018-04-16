@@ -63,15 +63,15 @@ class CustomCGenerator(object):
         use_setter=kwargs.get("use_setter_param",False)
         coming_from_for_loop=kwargs.get("coming_from_for_loop",False)
         is_global=0
-        (type_of_var,dict_of_var)=self.find_variable_in_fun_and_global_variables(self.name_of_fun_in_parsing,n.name) #try to find it in the known variables
+        (where_found,type_of_var,dict_of_var)=self.find_variable_in_fun_and_global_variables(self.name_of_fun_in_parsing,n.name) #try to find it in the known variables
         if (type_of_var=="variable_was_not_found"):
             #"printf" is an ID too. So, it might not be one of the secured variables
             return n.name
             
-        if type_of_var.split("$$$$$$")[1]=="found_in_globals":
+        if where_found=="found_in_globals":
             is_global=1
             
-        type_of_var_proper=type_of_var.split("$$$$$$")[0]
+        type_of_var_proper=type_of_var
 
         if (use_setter):
             if (is_global==0):
@@ -687,38 +687,28 @@ class CustomCGenerator(object):
         return ("variable_not_found_in_fun_vars","variable_not_found_in_fun_vars",None)
         
     def find_variable_in_globals(self,name_of_var):    
-        #!!!!!!!!!!!!!!! sos extend with structs+arrays. Now only supports simple global vars
         global_decls=self.global_decls
-        simple_vars_in_globals= global_decls['simple_vars']
-        structs_in_globals=global_decls['structs']
-        arrays_in_globals=global_decls['1_dim_arrays']
-        for simple_var in simple_vars_in_globals:
-            if simple_var['name']==name_of_var:
-                return (simple_var['type']+"$$$$$$found_in_globals",simple_var)
-        for struct in structs_in_globals:
-            if struct['name']==name_of_var:
-                return (struct['type']+"$$$$$$found_in_globals",struct)
-        for array in arrays_in_globals:
-            if array['name']==name_of_var:
-                return (array['type']+"$$$$$$found_in_globals",array)
+        for decl in global_decls:
+            if (is_typical_normal_var(decl[0][0]):
+                if decl[0][1]['name']==name_of_var:
+                    return ("found_in_globals",decl[0][1]['type'],decl)
+            else:
+                if decl[0][1]['name']==name_of_var:
+                    return ("found_in_globals",decl[0][1]['type'],decl) #same thing basically...... hmm...
         return ("variable_not_found_in_globals",None)
         
     def find_variable_in_fun_and_global_variables(self,name_of_function,name_of_var):
         #given a var name, returns where it was found + its type, and the corresponding dict.  Searches in function params/locals and then in globals
-        function_dict=self.functions[name_of_function]
-        params_list=function_dict['fun_decl'][0][1]
-        locals_list=function_dict['fun_locals']
-        global_decls=self.global_decls
-        #!!!!!!!!!!!!!!! sos extend with structs+arrays. Now only supports simple global vars
-        (where_found,type_in_fun_vars,tuple_of_var)=self.find_variable_in_fun_variables(name_of_function,name_of_var)
+
+        (where_found,type_in_vars,tuple_of_var)=self.find_variable_in_fun_variables(name_of_function,name_of_var)
         if (where_found=="variable_not_found_in_fun_vars"):
-            (type_in_globals,dict_of_var)=self.find_variable_in_globals(name_of_var)
+            (where_found,type_in_vars,tuple_of_var)=self.find_variable_in_globals(name_of_var)
             if (type_in_globals=="variable_not_found_in_globals"):
                 return ("variable_was_not_found","variable_was_not_found",None)
             else:
-                return ("found_in_globals",type_in_globals,tuple_of_var)
+                return (where_found,type_in_vars,tuple_of_var)
         else:
-            return (where_found,type_in_fun_vars,tuple_of_var)
+            return (where_found,type_in_vars,tuple_of_var)
             
             
     def give_global_definition(self):
