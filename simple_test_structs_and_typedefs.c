@@ -51,13 +51,18 @@ struct lol * muahaha;
 int main()
 {
 	char d[x];
+	char j[50];
+	char *k;
 	int n;
 
 	n=2;
 	d[1]='1';
 	d[n]=n;
 	d[d[n]]=n;
-	
+	j[j[2]]='4';
+	k=&j;
+	k[3]='2';	
+
 	return 0;
 }
 

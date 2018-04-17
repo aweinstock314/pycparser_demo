@@ -107,7 +107,7 @@ class CustomCGenerator(object):
         #search in variables
         (where_found,type_of_var,dict_of_array)=self.find_variable_in_fun_and_global_variables(self.name_of_fun_in_parsing,name_of_array)
         
-        if (type_of_var=="variable_was_not_found"):
+        if (where_found=="variable_was_not_found"):
             #It might not be one of the secured variables, return what it would return normally
             arrref = self._parenthesize_unless_simple(n.name,**kwargs) #kwargs? probably yes
             return arrref + '[' + self.visit(n.subscript,**kwargs) + ']' #kwargs? probably yes
@@ -128,46 +128,52 @@ class CustomCGenerator(object):
             print("Strange variable type!")
             print(dict_of_array,n)
             sys.exit(-1)
+
+        size_of_array_var=type_of_array_var[1]
         
-        
-        if (is_typical_normal_var(type_of_var_proper[0][0])):
+        if (is_typical_normal_var(type_of_array_var[0][0])):
             print("ERROR: Not yet supported array subscript")
             print(name_of_array,type_of_var,type_of_array_var,dict_of_array,n)
             sys.exit(-1)
         
+        if (size_of_array_var<0): #variable size
+            print("ERROR: Array element of variable size? Perhaps we have a cast?")
+            print(name_of_array,type_of_var,type_of_array_var,dict_of_array,n)
+            sys.exit(-1)
+
         if (use_setter):
             if (is_global==0):
                 if (is_array==1): #!!!!important: add support for structs as array elements etc.
-                    setter=find_name_of_stack_array_setter(type_of_array_var)
+                    setter="set_array_element"
                 else:
                     #it's a pointer and has been malloc'ed
-                    setter=find_name_of_sheap_array_setter(type_of_array_var)
+                    setter="set_array_element"
                 #pay attention that we need an extra parenthesis
                 if (type_of_var_proper=='ptr'):
-                    return "%s( GET_STACK_PTR(%s) , %s " % (setter,name_of_array,self.visit(n.subscript))
+                    return "%s(%s, GET_STACK_PTR(%s) , %s " % (setter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
                 else:
-                    return "%s( %s , %s " % (setter,name_of_array,self.visit(n.subscript))
+                    return "%s(%s, %s , %s " % (setter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
             else:
                 #it is a global array, therefore it is replaced with a pointer with the same name
                 #pay attention that we need an extra parenthesis
-                setter=find_name_of_sheap_array_setter(type_of_array_var)
-                return "%s( GET_GLOBAL_PTR(globals.%s) , %s " % (setter,name_of_array,self.visit(n.subscript))
+                setter="set_array_element"
+                return "%s(%s, GET_GLOBAL_PTR(globals.%s) , %s " % (setter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
         else:
             #getter
             if (is_global==1):
                 #it is a global array, therefore it is replaced with a pointer with the same name
-                getter=find_name_of_sheap_array_getter(type_of_array_var)
-                return "%s( GET_GLOBAL_PTR(globals.%s) , %s )" % (getter,name_of_array,self.visit(n.subscript))
+                getter="get_array_element"
+                return "%s(%s, GET_GLOBAL_PTR(globals.%s) , %s )" % (getter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
             else:
                 if (is_array==1):
-                    getter=find_name_of_stack_array_getter(type_of_array_var)
+                    getter="get_array_element"
                 else:
                     #it's a pointer and has been malloc'ed
-                    getter=find_name_of_sheap_array_getter(type_of_array_var)
+                    getter="get_array_element"
                 if (type_of_var_proper=='ptr'):
-                    return "%s( GET_STACK_PTR(%s) , %s )" % (getter,name_of_array,self.visit(n.subscript))
+                    return "%s(%s, GET_STACK_PTR(%s) , %s )" % (getter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
                 else:
-                    return "%s( %s , %s )" % (getter,name_of_array,self.visit(n.subscript))
+                    return "%s(%s, %s , %s )" % (getter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
 
     def visit_StructRef(self, n):
         sref = self._parenthesize_unless_simple(n.name)
@@ -699,7 +705,7 @@ class CustomCGenerator(object):
             else:
                 if decl[0][1]['name']==name_of_var:
                     return ("found_in_globals",decl[0][1]['type'],decl) #same thing basically...... hmm...
-        return ("variable_not_found_in_globals",None)
+        return ("variable_not_found_in_globals","variable_not_found_in_globals",None)
         
     def find_variable_in_fun_and_global_variables(self,name_of_function,name_of_var):
         #given a var name, returns where it was found + its type, and the corresponding dict.  Searches in function params/locals and then in globals
@@ -707,7 +713,7 @@ class CustomCGenerator(object):
         (where_found,type_in_vars,tuple_of_var)=self.find_variable_in_fun_variables(name_of_function,name_of_var)
         if (where_found=="variable_not_found_in_fun_vars"):
             (where_found,type_in_vars,tuple_of_var)=self.find_variable_in_globals(name_of_var)
-            if (type_in_globals=="variable_not_found_in_globals"):
+            if (where_found=="variable_not_found_in_globals"):
                 return ("variable_was_not_found","variable_was_not_found",None)
             else:
                 return (where_found,type_in_vars,tuple_of_var)
