@@ -55,7 +55,7 @@ int main()
 	char *k;
 	unsigned int n;
 
-	n=2;
+	n=(unsigned int) 2;
 	d[1]='1';
 	d[n]=n;
 	d[d[n]]=n;
@@ -66,6 +66,8 @@ int main()
 	a_fun(3,4);
 	hehe.a=4;
 	(&hehe)->b=3;
+	*(k+2)='1';
+	*(hehe.e[2])='2';
 
 	return 0;
 }

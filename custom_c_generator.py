@@ -208,6 +208,9 @@ class CustomCGenerator(object):
 
     def visit_StructRef(self, n):
         sref = self._parenthesize_unless_simple(n.name)
+        name_of_struct=n.name
+        name_of_struct_field=get_original_C_code_of_ast(n.field)
+        (struct_dict,size_of_elements_until_field)=self.find_struct_dict_and_offset(name_of_struct,name_of_struct_field,self.name_of_fun_in_parsing)
         return sref + n.type + self.visit(n.field)
 
     def visit_FuncCall(self, n,**kwargs):
@@ -247,7 +250,7 @@ class CustomCGenerator(object):
             return '(%s)' % self.visit(n.expr,**kwargs)
         elif n.op == '*': #!!!!!!!!!!!!! sos fix this
             kwargs["get_dereference_of_expr"]=True
-            return '(%s)' % self.visit(n.expr,**kwargs)
+            return '*(%s)' % self.visit(n.expr,**kwargs)
         else:
             return '%s%s' % (n.op, operand) #!!!!! cast?
 
@@ -742,6 +745,16 @@ class CustomCGenerator(object):
         else:
             return (where_found,type_in_vars,tuple_of_var)
             
+
+    def find_struct_dict_and_offset(self,name_of_struct,name_of_struct_field,name_of_function):
+        global_decls=self.global_decls
+        typedefs=self.typedefs
+        all_structs=self.all_structs
+        function_dict=self.functions[name_of_function]
+
+        (where_found,type_in_vars,tuple_of_var)=find_variable_in_fun_and_global_variables(self,name_of_function,name_of_var)
+        pass
+        
             
     def give_global_definition(self):
         #create the way the globals should be declared
