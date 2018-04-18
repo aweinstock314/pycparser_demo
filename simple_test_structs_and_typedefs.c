@@ -64,6 +64,8 @@ int main()
 	k=&j[0];
 	k[3]='2';	
 	a_fun(3,4);
+	hehe.a=4;
+	(&hehe)->b=3;
 
 	return 0;
 }

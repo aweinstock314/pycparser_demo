@@ -220,9 +220,13 @@ def get_size_of_type(name,typedefs):
         sys.exit(-1)
 
 
-
 def get_original_C_code_of_ast(ast):
     new_ast = copy.deepcopy(ast)
     generator = pycparser.c_generator.CGenerator() #that's the proper (pycparser) generator, not our custom
     original_c_lines=generator.visit(new_ast)
     return (original_c_lines)
+
+
+def get_type_of_ast(ast):
+    new_ast = copy.deepcopy(ast)
+    return get_original_C_code_of_ast(new_ast)

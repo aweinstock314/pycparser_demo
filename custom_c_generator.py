@@ -132,6 +132,7 @@ class CustomCGenerator(object):
 
         size_of_array_var=dict_of_array_var[1]
         type_of_array_var=dict_of_array_var[0][0]
+        C_code_for_type_of_array_var=get_type_of_ast(dict_of_array_var[0][1]["pycparser_ast"])
         
         if (is_typical_normal_var(type_of_array_var)):
             print("ERROR: Not yet supported array subscript")
@@ -152,20 +153,20 @@ class CustomCGenerator(object):
                     setter=find_name_of_sheap_array_setter(type_of_array_var)
                 #pay attention that we need an extra parenthesis
                 if (type_of_var_proper=='pointer'):
-                    return "(%s)%s( GET_STACK_PTR(%s) , %s " % (type_of_array_var,setter,name_of_array,self.visit(n.subscript))
+                    return "(%s)%s( GET_STACK_PTR(%s) , %s " % (C_code_for_type_of_array_var,setter,name_of_array,self.visit(n.subscript))
                 else:
-                    return "(%s)%s( %s , %s " % (type_of_array_var,setter,name_of_array,self.visit(n.subscript))
+                    return "(%s)%s( %s , %s " % (C_code_for_type_of_array_var,setter,name_of_array,self.visit(n.subscript))
             else:
                 #it is a global array, therefore it is replaced with a pointer with the same name
                 #pay attention that we need an extra parenthesis
                 setter=find_name_of_sheap_array_setter(type_of_array_var)
-                return "(%s)%s( GET_GLOBAL_PTR(globals.%s) , %s " % (type_of_array_var,setter,name_of_array,self.visit(n.subscript))
+                return "(%s)%s( GET_GLOBAL_PTR(globals.%s) , %s " % (C_code_for_type_of_array_var,setter,name_of_array,self.visit(n.subscript))
         else:
             #getter
             if (is_global==1):
                 #it is a global array, therefore it is replaced with a pointer with the same name
                 getter=find_name_of_sheap_array_getter(type_of_array_var)
-                return "(%s)%s( GET_GLOBAL_PTR(globals.%s) , %s )" % (type_of_array_var,getter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
+                return "(%s)%s( GET_GLOBAL_PTR(globals.%s) , %s )" % (C_code_for_type_of_array_var,getter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
             else:
                 if (is_array==1):
                     getter=find_name_of_stack_array_getter(type_of_array_var)
@@ -173,23 +174,13 @@ class CustomCGenerator(object):
                     #it's a pointer and has been malloc'ed
                     getter==find_name_of_sheap_array_getter(type_of_array_var)
                 if (type_of_var_proper=='pointer'):
-                    return "(%s)%s( GET_STACK_PTR(%s) , %s )" % (type_of_array_var,getter,name_of_array,self.visit(n.subscript))
+                    return "(%s)%s( GET_STACK_PTR(%s) , %s )" % (C_code_for_type_of_array_var,getter,name_of_array,self.visit(n.subscript))
                 else:
-                    return "(%s)%s( %s , %s )" % (type_of_array_var,getter,name_of_array,self.visit(n.subscript))
+                    return "(%s)%s( %s , %s )" % (C_code_for_type_of_array_var,getter,name_of_array,self.visit(n.subscript))
 
     def visit_StructRef(self, n):
         sref = self._parenthesize_unless_simple(n.name)
         return sref + n.type + self.visit(n.field)
-
-    def put_parameters_in_secure_order(self, name_of_fun, args_list):
-        #We change the order of parameters, to be per type
-        new_list_of_args=[]
-        for type_of_var in ['char','int','long','float','double','ptr','arb_ptr']:
-            #for every type, the param number is searched and put in the list
-            for j,order_of_call in enumerate(functions[name_of_fun]["params"][type_of_var]["order_in_calling"]):
-                new_list_of_args.append(args_list[order_of_call-1])
-        return new_list_of_args
-        
 
     def visit_FuncCall(self, n,**kwargs):
         fref = self._parenthesize_unless_simple(n.name)
@@ -224,7 +215,8 @@ class CustomCGenerator(object):
             # a name.
             return 'sizeof(%s)' % self.visit(n.expr,**kwargs)
         elif n.op == '&': #!!!!!!!!!!!!! sos fix this
-            return '&(%s)' % self.visit(n.expr,**kwargs)
+            kwargs["get_address_of_expr"]=True
+            return '(%s)' % self.visit(n.expr,**kwargs)
         else:
             return '%s%s' % (n.op, operand) #!!!!! cast?
 
@@ -689,7 +681,7 @@ class CustomCGenerator(object):
         locals_list=function_dict['fun_locals']
         for param in params_list:
             if name_of_var==param[0][1]['name']:
-                return ("found_in_fun_params,"param[0][1]['type'],param)
+                return ("found_in_fun_params",param[0][1]['type'],param)
         for local in locals_list:
             if name_of_var==local[0][1]['name']:
                 return ("found_in_fun_locals",local[0][1]['type'],local)
@@ -698,7 +690,7 @@ class CustomCGenerator(object):
     def find_variable_in_globals(self,name_of_var):    
         global_decls=self.global_decls
         for decl in global_decls:
-            if (is_typical_normal_var(decl[0][0]):
+            if (is_typical_normal_var(decl[0][0])):
                 if decl[0][1]['name']==name_of_var:
                     return ("found_in_globals",decl[0][1]['type'],decl)
             else:
