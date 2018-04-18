@@ -89,8 +89,8 @@ def typetorepr(node, word_size=8,**kwargs):
                     word_size)
 
     if isinstance(node, pycparser.c_ast.IdentifierType):
-        assert len(node.names) == 1
-        name = node.names[0]
+        name = " ".join(node.names)
+        print(name)
         size = get_size_of_type(name,typedefs)
         if (give_small_output):
             return (name, size)

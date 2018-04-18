@@ -53,7 +53,7 @@ int main()
 	char d[x];
 	char j[50];
 	char *k;
-	int n;
+	unsigned int n;
 
 	n=2;
 	d[1]='1';
@@ -61,7 +61,9 @@ int main()
 	d[d[n]]=n;
 	j[j[2]]='4';
 	k=&j;
+	k=&j[0];
 	k[3]='2';	
+	a_fun(3,4);
 
 	return 0;
 }
