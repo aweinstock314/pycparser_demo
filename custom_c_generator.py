@@ -20,7 +20,8 @@ import gc
 
 from pycparser import parse_file, c_ast, c_parser,c_generator
 from pycparser.plyparser import Coord
-from extra_functions_for_parser_generic import *
+from our_helper_functions import *
+from helper_functions_by_pycparser import *
 
 
 class CustomCGenerator(object):
@@ -71,26 +72,26 @@ class CustomCGenerator(object):
         if where_found=="found_in_globals":
             is_global=1
             
-        type_of_var_proper=type_of_var
+        type_of_var_proper=type_of_var[0][0]
 
         if (use_setter):
             if (is_global==0):
                 setter=find_name_of_stack_setter_in_caps(type_of_var_proper)
                 #pay attention that we need an extra parenthesis
-                return "%s( %s " % (setter,n.name)
+                return "(%s)%s( %s " % (type_of_var_proper,setter,n.name)
             else:
                 #pay attention that we need an extra parenthesis
                 if (coming_from_for_loop==False):
-                    return "%s( globals.%s " % ("UPDATE_GLOBAL_VAR",n.name)
+                    return "(%s)%s( globals.%s " % (type_of_var_proper,"UPDATE_GLOBAL_VAR",n.name)
                 else:
-                    return "%s( globals.%s " % ("UPDATE_GLOBAL_VAR_FOR_LOOPS",n.name)
+                    return "(%s)%s( globals.%s " % (type_of_var_proper,"UPDATE_GLOBAL_VAR_FOR_LOOPS",n.name)
         else:
             getter=find_name_of_stack_getter_in_caps(type_of_var_proper)
             if (is_global==1):
                 getter=find_name_of_global_getter(type_of_var_proper)
-                return "%s( globals.%s )" % (getter,n.name)
+                return "(%s)%s( globals.%s )" % (type_of_var_proper,getter,n.name)
             else:
-                return "%s( %s )" % (getter,n.name)
+                return "(%s)%s( %s )" % (type_of_var_proper,getter,n.name)
     
     
     def visit_Pragma(self, n):
@@ -115,30 +116,31 @@ class CustomCGenerator(object):
         if where_found=="found_in_globals":
             is_global=1
             
-        type_of_var_proper=type_of_var
+        type_of_var_proper=type_of_var[0][0]
         
         if type_of_var_proper=="array":
-            type_of_array_var=dict_of_array['type_of_array_elem']
+            dict_of_array_var=dict_of_array['type_of_array_elem']
             is_array=1
         elif type_of_var_proper=="pointer":
             #it's a pointer that has been malloced and accessed as array?
-            type_of_array_var=dict_of_array['type_of_pointed_elem']
+            dict_of_array_var=dict_of_array['type_of_pointed_elem']
             is_array=0
         else:
             print("Strange variable type!")
             print(dict_of_array,n)
             sys.exit(-1)
 
-        size_of_array_var=type_of_array_var[1]
+        size_of_array_var=dict_of_array_var[1]
+        type_of_array_var=dict_of_array_var[0][0]
         
-        if (is_typical_normal_var(type_of_array_var[0][0])):
+        if (is_typical_normal_var(type_of_array_var)):
             print("ERROR: Not yet supported array subscript")
-            print(name_of_array,type_of_var,type_of_array_var,dict_of_array,n)
+            print(name_of_array,type_of_var,dict_of_array_var,dict_of_array,n)
             sys.exit(-1)
         
         if (size_of_array_var<0): #variable size
             print("ERROR: Array element of variable size? Perhaps we have a cast?")
-            print(name_of_array,type_of_var,type_of_array_var,dict_of_array,n)
+            print(name_of_array,type_of_var,dict_of_array_var,dict_of_array,n)
             sys.exit(-1)
 
         if (use_setter):
@@ -149,17 +151,18 @@ class CustomCGenerator(object):
                     #it's a pointer and has been malloc'ed
                     setter="set_array_element"
                 #pay attention that we need an extra parenthesis
-                if (type_of_var_proper=='ptr'):
-                    return "%s(%s, GET_STACK_PTR(%s) , %s " % (setter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
+                if (type_of_var_proper=='pointer'):
+                    return "(%s)%s(%s, GET_STACK_PTR(%s) , %s " % (type_of_array_var,setter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
                 else:
-                    return "%s(%s, %s , %s " % (setter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
+                    return "(%s)%s(%s, %s , %s " % (type_of_array_var,setter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
             else:
                 #it is a global array, therefore it is replaced with a pointer with the same name
                 #pay attention that we need an extra parenthesis
                 setter="set_array_element"
-                return "%s(%s, GET_GLOBAL_PTR(globals.%s) , %s " % (setter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
+                return "(%s)%s(%s, GET_GLOBAL_PTR(globals.%s) , %s " % (type_of_array_var,setter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
         else:
             #getter
+            getter=find_getter_type_for_array_element
             if (is_global==1):
                 #it is a global array, therefore it is replaced with a pointer with the same name
                 getter="get_array_element"
@@ -191,18 +194,13 @@ class CustomCGenerator(object):
 
     def visit_FuncCall(self, n,**kwargs):
         fref = self._parenthesize_unless_simple(n.name)
-        if (fref not in functions):
+        if (fref not in self.functions):
             #our function is not one of the defined ones. It might be printf() or something else
             return fref + '(' + self.visit(n.args) + ')'
         else:
             s=''
-            s+='{{{ HEY PYTHON CALL FUNCTION WITH NEW TEMPLATE:' + str(fref)+'_sec'
+            s+='{{{ HEY PYTHON CALL FUNCTION WITH NEWER TEMPLATE:' + str(fref)+'_sec'
             s+=' | HELPING ARGS FOR FUN CALL:' #+ nothing
-            args_as_dict=to_dict(n.args)
-            params_as_list=args_as_dict["exprs"]
-            new_params_as_list=self.put_parameters_in_secure_order(fref,params_as_list)
-            args_as_dict["exprs"]=new_params_as_list #change the list of params
-            n.args=from_dict(args_as_dict) #update the ast
             kwargs["these_are_function_args"]=True #so as to replace ","'s with "@"'s. That is necessary in order for the next python script to distinguish between params and commas in params (splits in commas)
             s+=' | PARAMETERS TO CALL WITH: ' + self.visit(n.args,**kwargs) +' }}}' # no newline
             #{{{HEY PYTHON CALL FUNCTION WITH NEW TEMPLATE: <name_of_fun> | HELPING ARGS FOR FUN CALL: arg1="value1",arg2="value2",.. |PARAMETERS TO CALL WITH : param1,param2 ... }}}
@@ -226,8 +224,10 @@ class CustomCGenerator(object):
             # Always parenthesize the argument of sizeof since it can be
             # a name.
             return 'sizeof(%s)' % self.visit(n.expr,**kwargs)
+        elif n.op == '&': #!!!!!!!!!!!!! sos fix this
+            return '&(%s)' % self.visit(n.expr,**kwargs)
         else:
-            return '%s%s' % (n.op, operand)
+            return '%s%s' % (n.op, operand) #!!!!! cast?
 
     def visit_BinaryOp(self, n,**kwargs):
         lval_str = self._parenthesize_if(n.left,

@@ -10,7 +10,8 @@ from helper_functions_by_pycparser import *
 
 
 
-def find_name_of_stack_getter_in_caps(type_of_var):
+def find_name_of_stack_getter_in_caps(type_of_var_full):
+    type_of_var=''.join(type_of_var_full.split("unsigned ",1)) #remove unsigned
     name_of_setter='GET_STACK_'
     if( type_of_var=='long' or type_of_var=='long int'):
         name_of_setter+='LONG'
@@ -27,7 +28,8 @@ def find_name_of_stack_getter_in_caps(type_of_var):
     return name_of_setter
 
 
-def find_name_of_global_getter(type_of_var):
+def find_name_of_global_getter(type_of_var_full):
+    type_of_var=''.join(type_of_var_full.split("unsigned ",1)) #remove unsigned
     name_of_getter='GET_GLOBAL_'
     if( type_of_var=='long' or type_of_var=='long int'):
         name_of_getter+='LONG'
@@ -43,7 +45,8 @@ def find_name_of_global_getter(type_of_var):
         name_of_getter+='CHAR'
     return name_of_getter
 
-def find_name_of_stack_setter_in_caps(type_of_var):
+def find_name_of_stack_setter_in_caps(type_of_var_full):
+    type_of_var=''.join(type_of_var_full.split("unsigned ",1)) #remove unsigned
     name_of_setter='SET_STACK_'
     if( type_of_var=='long' or type_of_var=='long int'):
         name_of_setter+='LONG'
@@ -59,7 +62,8 @@ def find_name_of_stack_setter_in_caps(type_of_var):
         name_of_setter+='CHAR'
     return name_of_setter
 
-def find_name_of_stack_array_setter(type_of_var):
+def find_name_of_stack_array_setter(type_of_var_full):
+    type_of_var=''.join(type_of_var_full.split("unsigned ",1)) #remove unsigned
     name_of_setter='set_stack_'
     if( type_of_var=='long' or type_of_var=='long int'):
         name_of_setter+='long_int'
@@ -76,7 +80,8 @@ def find_name_of_stack_array_setter(type_of_var):
     name_of_setter+='_array_element'
     return name_of_setter
     
-def find_name_of_stack_array_getter(type_of_var):
+def find_name_of_stack_array_getter(type_of_var_full):
+    type_of_var=''.join(type_of_var_full.split("unsigned ",1)) #remove unsigned
     name_of_getter='get_stack_'
     if( type_of_var=='long' or type_of_var=='long int'):
         name_of_getter+='long_int'
@@ -94,7 +99,8 @@ def find_name_of_stack_array_getter(type_of_var):
     return name_of_getter
     
     
-def find_name_of_sheap_array_setter(type_of_var):
+def find_name_of_sheap_array_setter(type_of_var_full):
+    type_of_var=''.join(type_of_var_full.split("unsigned ",1)) #remove unsigned
     name_of_setter='set_'
     if( type_of_var=='long' or type_of_var=='long int'):
         name_of_setter+='long_int'
@@ -111,7 +117,8 @@ def find_name_of_sheap_array_setter(type_of_var):
     name_of_setter+='_array_element'
     return name_of_setter
     
-def find_name_of_sheap_array_getter(type_of_var):
+def find_name_of_sheap_array_getter(type_of_var_full):
+    type_of_var=''.join(type_of_var_full.split("unsigned ",1)) #remove unsigned
     name_of_getter='get_'
     if( type_of_var=='long' or type_of_var=='long int'):
         name_of_getter+='long_int'
@@ -181,7 +188,8 @@ def RepresentsInt(s):
         return False
 
 
-def is_typical_normal_var(type_of_var):
+def is_typical_normal_var(type_of_var_full):
+    type_of_var=''.join(type_of_var_full.split("unsigned ",1)) #remove unsigned
     if type_of_var in ['void','float','double','long','long int','int','char','long double','pointer']:
         return True
     else:
@@ -189,10 +197,12 @@ def is_typical_normal_var(type_of_var):
 
 
 def get_size_of_type(name,typedefs):
+    list_of_supported_types=['void','float','double','long','long int','int','char','long double']
+    name_without_unsigned=''.join(name.split("unsigned ",1))
     if name in typedefs:
         (tpdf,sz)=typedefs[name]
         return sz
-    elif name in ['void','float','double','long','long int','int','char','long double']:
+    elif name_without_unsigned in list_of_supported_types:
         sz= {
             'void': 0,
             'float': 4,
@@ -202,7 +212,7 @@ def get_size_of_type(name,typedefs):
             'int': 4,
             'char': 1,
             'long double':16 #careful: not supported yet
-            }[name]
+            }[name_without_unsigned]
         return sz
     else:
         print("ERROR IN SIZE CALC")
