@@ -63,6 +63,8 @@ class CustomCGenerator(object):
     def visit_ID(self, n,**kwargs):
         use_setter=kwargs.get("use_setter_param",False)
         coming_from_for_loop=kwargs.get("coming_from_for_loop",False)
+        get_address_of_expr=kwargs.get("get_address_of_expr",False) ; kwargs["get_address_of_expr"]=False
+        get_dereference_of_expr=kwargs.get("get_dereference_of_expr",False);kwargs["get_dereference_of_expr"]=False
         is_global=0
         (where_found,type_of_var,dict_of_var)=self.find_variable_in_fun_and_global_variables(self.name_of_fun_in_parsing,n.name) #try to find it in the known variables
         if (type_of_var=="variable_was_not_found"):
@@ -73,6 +75,13 @@ class CustomCGenerator(object):
             is_global=1
             
         type_of_var_proper=type_of_var
+
+        if (get_address_of_expr): #an "&" is before us
+            if (is_global==0):
+                return "(%s*)%s" % (type_of_var_proper,n.name)
+            else:
+                return "(%s*)globals.%s" % (type_of_var_proper,n.name)
+ 
 
         if (use_setter):
             if (is_global==0):
@@ -102,6 +111,8 @@ class CustomCGenerator(object):
 
     def visit_ArrayRef(self, n,**kwargs):
         use_setter=kwargs.get("use_setter_param",False)
+        get_address_of_expr=kwargs.get("get_address_of_expr",False); kwargs["get_address_of_expr"]=False
+        get_dereference_of_expr=kwargs.get("get_dereference_of_expr",False);kwargs["get_dereference_of_expr"]=False
         name_of_array=n.name.name
         is_global=0
         is_array=1 # might be a malloc'ed pointer which is accessed as array
@@ -130,6 +141,7 @@ class CustomCGenerator(object):
             print(dict_of_array,n)
             sys.exit(-1)
 
+        
         size_of_array_var=dict_of_array_var[1]
         type_of_array_var=dict_of_array_var[0][0]
         C_code_for_type_of_array_var=get_type_of_ast(dict_of_array_var[0][1]["pycparser_ast"])
@@ -143,6 +155,22 @@ class CustomCGenerator(object):
             print("ERROR: Array element of variable size? Perhaps we have a cast?")
             print(name_of_array,type_of_var,dict_of_array_var,dict_of_array,n)
             sys.exit(-1)
+
+
+        if (get_address_of_expr): #an "&" is before us
+            if (is_global==0):
+                if (is_array==1):
+                    getter="get_address_of_stack_array_element"
+                else:
+                    #it's a pointer and has been malloc'ed
+                    getter="get_address_of_sheap_array_element"
+                return "(%s*)%s(%s,GET_STACK_PTR(%s),%s)" % (C_code_for_type_of_array_var,getter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
+            else:
+                #it is a global array, therefore it is replaced with a pointer with the same name
+                getter="get_address_of_sheap_array_element"
+                return "(%s*)%s(%s,GET_GLOBAL_PTR(globals.%s),%s)" % (C_code_for_type_of_array_var,getter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
+
+
 
         if (use_setter):
             if (is_global==0):
@@ -214,8 +242,11 @@ class CustomCGenerator(object):
             # Always parenthesize the argument of sizeof since it can be
             # a name.
             return 'sizeof(%s)' % self.visit(n.expr,**kwargs)
-        elif n.op == '&': #!!!!!!!!!!!!! sos fix this
+        elif n.op == '&': #!!!! support is not 100% proper...
             kwargs["get_address_of_expr"]=True
+            return '(%s)' % self.visit(n.expr,**kwargs)
+        elif n.op == '*': #!!!!!!!!!!!!! sos fix this
+            kwargs["get_dereference_of_expr"]=True
             return '(%s)' % self.visit(n.expr,**kwargs)
         else:
             return '%s%s' % (n.op, operand) #!!!!! cast?
