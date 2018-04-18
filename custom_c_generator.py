@@ -72,7 +72,7 @@ class CustomCGenerator(object):
         if where_found=="found_in_globals":
             is_global=1
             
-        type_of_var_proper=type_of_var[0][0]
+        type_of_var_proper=type_of_var
 
         if (use_setter):
             if (is_global==0):
@@ -116,7 +116,7 @@ class CustomCGenerator(object):
         if where_found=="found_in_globals":
             is_global=1
             
-        type_of_var_proper=type_of_var[0][0]
+        type_of_var_proper=type_of_var
         
         if type_of_var_proper=="array":
             dict_of_array_var=dict_of_array['type_of_array_elem']
@@ -146,37 +146,36 @@ class CustomCGenerator(object):
         if (use_setter):
             if (is_global==0):
                 if (is_array==1): #!!!!important: add support for structs as array elements etc.
-                    setter="set_array_element"
+                    setter=find_name_of_stack_array_setter(type_of_array_var)
                 else:
                     #it's a pointer and has been malloc'ed
-                    setter="set_array_element"
+                    setter=find_name_of_sheap_array_setter(type_of_array_var)
                 #pay attention that we need an extra parenthesis
                 if (type_of_var_proper=='pointer'):
-                    return "(%s)%s(%s, GET_STACK_PTR(%s) , %s " % (type_of_array_var,setter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
+                    return "(%s)%s( GET_STACK_PTR(%s) , %s " % (type_of_array_var,setter,name_of_array,self.visit(n.subscript))
                 else:
-                    return "(%s)%s(%s, %s , %s " % (type_of_array_var,setter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
+                    return "(%s)%s( %s , %s " % (type_of_array_var,setter,name_of_array,self.visit(n.subscript))
             else:
                 #it is a global array, therefore it is replaced with a pointer with the same name
                 #pay attention that we need an extra parenthesis
-                setter="set_array_element"
-                return "(%s)%s(%s, GET_GLOBAL_PTR(globals.%s) , %s " % (type_of_array_var,setter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
+                setter=find_name_of_sheap_array_setter(type_of_array_var)
+                return "(%s)%s( GET_GLOBAL_PTR(globals.%s) , %s " % (type_of_array_var,setter,name_of_array,self.visit(n.subscript))
         else:
             #getter
-            getter=find_getter_type_for_array_element
             if (is_global==1):
                 #it is a global array, therefore it is replaced with a pointer with the same name
-                getter="get_array_element"
-                return "%s(%s, GET_GLOBAL_PTR(globals.%s) , %s )" % (getter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
+                getter=find_name_of_sheap_array_getter(type_of_array_var)
+                return "(%s)%s( GET_GLOBAL_PTR(globals.%s) , %s )" % (type_of_array_var,getter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
             else:
                 if (is_array==1):
-                    getter="get_array_element"
+                    getter=find_name_of_stack_array_getter(type_of_array_var)
                 else:
                     #it's a pointer and has been malloc'ed
-                    getter="get_array_element"
-                if (type_of_var_proper=='ptr'):
-                    return "%s(%s, GET_STACK_PTR(%s) , %s )" % (getter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
+                    getter==find_name_of_sheap_array_getter(type_of_array_var)
+                if (type_of_var_proper=='pointer'):
+                    return "(%s)%s( GET_STACK_PTR(%s) , %s )" % (type_of_array_var,getter,name_of_array,self.visit(n.subscript))
                 else:
-                    return "%s(%s, %s , %s )" % (getter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
+                    return "(%s)%s( %s , %s )" % (type_of_array_var,getter,name_of_array,self.visit(n.subscript))
 
     def visit_StructRef(self, n):
         sref = self._parenthesize_unless_simple(n.name)
