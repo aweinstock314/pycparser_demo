@@ -109,7 +109,7 @@ class CustomCGenerator(object):
         if n.string:
             ret += ' ' + n.string
         return ret
-
+    
     def visit_ArrayRef(self, n,**kwargs):
         use_setter=kwargs.get("use_setter_param",False)
         get_address_of_expr=kwargs.get("get_address_of_expr",False); kwargs["get_address_of_expr"]=False
@@ -304,7 +304,8 @@ class CustomCGenerator(object):
     def visit_Decl(self, n, no_type=False):
         # no_type is used when a Decl is part of a DeclList, where the type is
         # explicitly only for the first declaration in a list.
-        #
+        #!!!!! we don't want any decl! we will do everything manually!
+        return ''
         s = n.name if no_type else self._generate_decl(n)
         if n.bitsize: s += ' : ' + self.visit(n.bitsize)
         if n.init:
@@ -312,6 +313,8 @@ class CustomCGenerator(object):
         return s
 
     def visit_DeclList(self, n):
+        #!!! hmm no decls should be created right?
+        return ''
         s = self.visit(n.decls[0])
         if len(n.decls) > 1:
             s += ', ' + ', '.join(self.visit_Decl(decl, no_type=True)
@@ -419,8 +422,8 @@ class CustomCGenerator(object):
 
     def visit_FuncDef(self, n):
         self.name_of_fun_in_parsing=n.decl.name
-        #decl = self.visit(n.decl)
-        decl=create_secure_function_decl(self.name_of_fun_in_parsing)
+        decl = self.visit(n.decl)
+        #decl=create_secure_function_decl(self.name_of_fun_in_parsing) !!!tofix
         self.indent_level = 0
         body = self.visit(n.body,you_are_body=True)
         end_point_str="END_OF_FUNCTION:" + self.name_of_fun_in_parsing+"_sec"
@@ -436,8 +439,8 @@ class CustomCGenerator(object):
         for ext in n.ext:
             if isinstance(ext, c_ast.FuncDef):
                 s += self.visit(ext)
-            elif isinstance(ext, c_ast.Pragma):
-                s += self.visit(ext) + '\n'
+            #elif isinstance(ext, c_ast.Pragma): # !!!!????? AttributeError: module 'pycparser.c_ast' has no attribute 'Pragma' ????
+            #    s += self.visit(ext) + '\n'
             else:
                 s += self.visit(ext) + ';\n'
         return s
@@ -448,7 +451,8 @@ class CustomCGenerator(object):
         kwargs["you_are_body"]=False #revert to old value
         self.indent_level += 2
         if (am_body):
-            init_fun_params=self.add_function_locals_initialization() #initialize locals
+            #init_fun_params=self.add_function_locals_initialization() #initialize locals
+            init_fun_params='' #!!!tofix            
             s+=init_fun_params+'\n'
         if n.block_items:
             s += ''.join(self._generate_stmt(stmt) for stmt in n.block_items)
@@ -713,7 +717,7 @@ class CustomCGenerator(object):
     def find_variable_in_fun_variables(self,name_of_function,name_of_var):
         #given a var name, returns its type and its corresponding dict. Searches in function params/locals
         function_dict=self.functions[name_of_function]
-        params_list=function_dict['fun_decl'][0][1]
+        params_list=function_dict['fun_decl'][0][1]['list_of_arguments']
         locals_list=function_dict['fun_locals']
         for param in params_list:
             if name_of_var==param[0][1]['name'] or (param[0][0]=="struct" and param[0][1]["name_of_struct_variable"]==name_of_var):
@@ -842,4 +846,10 @@ class CustomCGenerator(object):
             global_def+=s
         return global_def
             
+
+
+ast = pycparser.parse_file(sys.argv[1],use_cpp=True)
+custom_c_generator=CustomCGenerator()
+original_c_lines=custom_c_generator.visit(ast)
+print(original_c_lines)
     

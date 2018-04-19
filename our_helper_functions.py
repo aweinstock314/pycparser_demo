@@ -180,6 +180,23 @@ def get_name_of_a_node(node):
         sys.exit(-1)
 
 
+def replace_comma_with_at_outside_funcall(str_in):
+    #replaces the commas separating a function's arguments with "@" (so that a next python script will not be confused when splitting by comma)
+    #Does not do that when inside a function call (i.e inside a {{{ ... }}} block)
+    three_paren_num=0
+    str_out=[]
+    for i in range(len(str_in)):
+        if (i<len(str_in)-2 and str_in[i]=='{' and str_in[i+1]=='{' and str_in[i+2]=='{'):
+            three_paren_num+=1
+        if (i<len(str_in)-2 and str_in[i]=='}' and str_in[i+1]=='}' and str_in[i+2]=='}'):
+            three_paren_num-=1
+        if (three_paren_num==0 and str_in[i]==','):
+            str_out.append('@')
+        else:
+            str_out.append(str_in[i])
+    return ''.join(str_out)
+
+
 def RepresentsInt(s):
     try: 
         int(s)
