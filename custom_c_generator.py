@@ -42,6 +42,7 @@ class CustomCGenerator(object):
             self.typedefs=semantic_dict['typedefs']
             self.global_decls=semantic_dict['global_decls']
             self.all_structs=semantic_dict['all_structs']
+            self.global_decl_names=semantic_dict['global_decl_names']
 
     def _make_indent(self):
         return ' ' * self.indent_level
@@ -714,21 +715,22 @@ class CustomCGenerator(object):
         params_list=function_dict['fun_decl'][0][1]
         locals_list=function_dict['fun_locals']
         for param in params_list:
-            if name_of_var==param[0][1]['name']:
+            if name_of_var==param[0][1]['name'] or (param[0][0]=="struct" and param[0][1]["name_of_struct_variable"]==name_of_var):
                 return ("found_in_fun_params",param[0][1]['type'],param)
         for local in locals_list:
-            if name_of_var==local[0][1]['name']:
+            if name_of_var==local[0][1]['name'] or (local[0][0]=="struct" and local[0][1]["name_of_struct_variable"]==name_of_var):
                 return ("found_in_fun_locals",local[0][1]['type'],local)
         return ("variable_not_found_in_fun_vars","variable_not_found_in_fun_vars",None)
         
     def find_variable_in_globals(self,name_of_var):    
         global_decls=self.global_decls
-        for decl in global_decls:
+        global_decl_names=self.global_decl_names
+        for i,decl in enumerate(global_decls):
             if (is_typical_normal_var(decl[0][0])):
-                if decl[0][1]['name']==name_of_var:
+                if decl[0][1]['name']==name_of_var or (decl[0][0]=="struct" and decl[0][1]["name_of_struct_variable"]==name_of_var):
                     return ("found_in_globals",decl[0][1]['type'],decl)
             else:
-                if decl[0][1]['name']==name_of_var:
+                if decl[0][1]['name']==name_of_var or (decl[0][0]=="struct" and decl[0][1]["name_of_struct_variable"]==name_of_var):
                     return ("found_in_globals",decl[0][1]['type'],decl) #same thing basically...... hmm...
         return ("variable_not_found_in_globals","variable_not_found_in_globals",None)
         
@@ -753,7 +755,39 @@ class CustomCGenerator(object):
         function_dict=self.functions[name_of_function]
 
         (where_found,type_in_vars,tuple_of_var)=find_variable_in_fun_and_global_variables(self,name_of_function,name_of_var)
+        if where_found=="variable_was_not_found":
+            print("Struct was not found!")
+            print(name_of_struct,name_of_struct_field,name_of_function)
+            sys.exit(-1)
+        
+        struct_variable_name=tuple_of_var[0][1]["name_of_struct_variable"]
+        #so we have a struct variable, lets grab the struct description
+        type_of_struct_variable=tuple_of_var[0][1]["type"]
+        struct_description=None
+        if type_of_struct_variable!="struct":
+            #its a typedef!
+            if type_of_struct_variable not in typedefs:
+                print("Expecting a typedef but did not find it!")
+                print (type_of_struct_variable,where_found,type_in_vars,tuple_of_var,struct_variable_name)
+                sys.exit(-1)
+            dict_of_typedef=typedefs[type_of_struct_variable]
+            while type_of_struct_variable!="struct": #follow the typedefs to get the struct type
+                type_of_struct_variable=dict_of_typedef[0][1]["type"]
+                if type_of_struct_variable!="struct":
+                    dict_of_typedef=typedefs[type_of_struct_variable]
+            struct_type=dict_of_typedef[0][1]['name']
+        else:
+            struct_type=tuple_of_var[0][1]['name']
+
+        #now that we got the struct type, grab the description form the all_structs_dict
+        if struct_type not in all_structs:
+            print("Struct not found in all structs!")
+            print(where_found,type_in_vars,tuple_of_var,struct_variable_name,type_of_struct_variable,struct_type)
+            sys.exit(-1)
+        struct_description=all_structs[struct_type]
         pass
+
+          
         
             
     def give_global_definition(self):

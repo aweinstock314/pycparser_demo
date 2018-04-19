@@ -8,8 +8,8 @@ typedef struct boom
     int x;
 } bam;
 
-
-bam grenade;
+typedef bam bom;
+bom grenade;
 
 struct lol
 {

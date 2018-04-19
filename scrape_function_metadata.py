@@ -74,10 +74,12 @@ def typetorepr(node, word_size=8,**kwargs):
             retval=(['struct', node.name, types], size)
         else:
             retval= (['struct',
-                    {"type":"struct", "name":node.name,  "size":size,  "struct_elements":types ,"pycparser_ast":copy.deepcopy(node)}], 
+                    {"type":"struct", "name":node.name, "name_of_struct_variable":get_name_of_a_node(parent_node), "size":size,  "struct_elements":types ,"pycparser_ast":copy.deepcopy(node)}], 
                     size)
-        if node.name not in all_structs_dict:        
-            all_structs_dict[node.name]=retval #add it to the all structs dict if it is not there
+        if node.name not in all_structs_dict:
+            struct_dict=copy.deepcopy(retval)
+            struct_dict[0][1].pop("name_of_struct_variable", None) #delete "name_of_struct_variable" as it is not relevant to a struct description
+            all_structs_dict[node.name]=struct_dict #add it to the all structs dict if it is not there.
         return retval
 
     if isinstance(node, pycparser.c_ast.PtrDecl):
@@ -127,6 +129,7 @@ kwargs=dict()
 decls_to_gather=[]
 typedefs=dict()
 all_structs_dict=dict()
+global_decl_names=[]
 
 for node in listify(ast):
     kwargs["parent_node"]=node
@@ -135,6 +138,7 @@ for node in listify(ast):
         typedefs[name_of_typedef]=typetorepr(node.type,**kwargs)
     if isinstance(node, pycparser.c_ast.Decl):
         global_decls.append(typetorepr(node,**kwargs))
+        global_decl_names.append(node.name)
         print (node.name)
         print ('\t', typetorepr(node,**kwargs))
     if isinstance(node, pycparser.c_ast.FuncDef):
@@ -156,8 +160,8 @@ print("\nGLOBAL DECLS:\n")
 if (give_small_output):
     print(global_decls)
 else:
-    for x in global_decls:
-        print(x)
+    for i,x in enumerate(global_decls):
+        print(global_decl_names[i]," : ",x)
 print("\nTYPEDEFS:\n")
 if (give_small_output):
     print(typedefs)
@@ -176,5 +180,6 @@ semantic_dict["functions"]=function_types
 semantic_dict["global_decls"]=global_decls
 semantic_dict["typedefs"]=typedefs
 semantic_dict["all_structs"]=all_structs_dict
+semantic_dict["global_decl_names"]=global_decl_names
 pickle.dump( semantic_dict, open( "semantic_data", "wb" ) )
 
