@@ -211,7 +211,8 @@ class CustomCGenerator(object):
         sref = self._parenthesize_unless_simple(n.name)
         name_of_struct=n.name
         name_of_struct_field=get_original_C_code_of_ast(n.field)
-        (struct_dict,size_of_elements_until_field)=self.find_struct_dict_and_offset(name_of_struct,name_of_struct_field,self.name_of_fun_in_parsing)
+        (where_found,type_in_vars,tuple_of_var,struct_description,size_of_whole_struct,size_of_elem_in_question,size_of_elements_so_far)=self.find_struct_dict_and_offset(name_of_struct,name_of_struct_field,self.name_of_fun_in_parsing)
+        #!!!!sos! extend with the access to that
         return sref + n.type + self.visit(n.field)
 
     def visit_FuncCall(self, n,**kwargs):
@@ -779,13 +780,24 @@ class CustomCGenerator(object):
         else:
             struct_type=tuple_of_var[0][1]['name']
 
-        #now that we got the struct type, grab the description form the all_structs_dict
+        #now that we got the struct type, grab the description from the all_structs_dict
         if struct_type not in all_structs:
             print("Struct not found in all structs!")
             print(where_found,type_in_vars,tuple_of_var,struct_variable_name,type_of_struct_variable,struct_type)
             sys.exit(-1)
         struct_description=all_structs[struct_type]
-        pass
+        
+        #find the field in question and the sizes up to it
+        size_of_elements_so_far=0
+        size_of_elem_in_question=0
+        size_of_whole_struct=struct_description[1]
+        for elem in struct_description[0][1]["struct_elements"]:
+            if elem[0][1]['name']==name_of_struct_field:
+                size_of_elem_in_question=elem[1]
+            else:
+                size_of_elements_so_far+=elem[1]
+               
+        return (where_found,type_in_vars,tuple_of_var,struct_description,size_of_whole_struct,size_of_elem_in_question,size_of_elements_so_far)
 
           
         
