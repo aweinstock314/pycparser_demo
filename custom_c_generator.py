@@ -438,8 +438,8 @@ class CustomCGenerator(object):
 		original_decl = get_original_C_code_of_ast(n.decl)
 		start_of_ret="/* DEFINITION OF FUNCTION: "+ original_decl+ " */\n"
 		local_var_original_decl=self.get_original_declaration_of_locals(n)
-		start_of_ret+="/* LOCAL VARIABLES:\n"+local_var_original_decl+"*/"
-		start_of_ret+="START_OF_FUNCTION :"+self.name_of_fun_in_parsing+'\n'
+		start_of_ret+="/* LOCAL VARIABLES:\n"+local_var_original_decl+"*/\n"
+		start_of_ret+="START_OF_FUNCTION:"+self.name_of_fun_in_parsing+'\n'
 		body=self.add_function_locals_initialization(self.name_of_fun_in_parsing)
 		body += self.visit(n.body,you_are_body=True)
 		self.indent_level = 0
@@ -460,7 +460,7 @@ class CustomCGenerator(object):
 			#elif isinstance(ext, c_ast.Pragma): # !!!!????? AttributeError: module 'pycparser.c_ast' has no attribute 'Pragma' ????
 			#	s += self.visit(ext) + '\n'
 			else:
-				s += self.visit(ext) + ';\n'
+				s += self.visit(ext) + '\n'
 		return s
 
 	def visit_Compound(self, n,**kwargs):
@@ -840,6 +840,7 @@ class CustomCGenerator(object):
 			ast_of_last_decl=global_decl[0][1]['ast_of_last_proper_Decl']
 			ast_of_last_decl.init=None #erase init
 			original_c_decl=get_original_C_code_of_ast(ast_of_last_decl)
+			new_c_decl=original_c_decl
 			type_of_var=global_decl[0][0]
 			#!!!! add typedefs support
 			if type_of_var=='struct' and decl==global_decl[0][1]["name_of_struct_variable"]==None:
@@ -851,10 +852,10 @@ class CustomCGenerator(object):
 				replace_with_ptr=1
 				if type_of_var=='struct':
 					name_of_var=global_decl[0][1]["name_of_struct_variable"]
-					original_c_decl=('* '+name_of_var+'').join(original_c_decl.split(name_of_var,1)) #change the original c decl to be a pointer to what was there before
+					new_c_decl=('* '+name_of_var+'').join(original_c_decl.split(name_of_var,1)) #change the original c decl to be a pointer to what was there before
 				elif type_of_var=='array':
 					element_c_decl=get_type_of_ast_dict(global_decl[0][1]['type_of_array_element']) #use this or next line?
-					original_c_decl=('* '+name_of_var+'').join(original_c_decl.split(name_of_var,1)) #!!!!will this work?
+					new_c_decl=original_c_decl.split(name_of_var,1)[0]+"* "+name_of_var #!!!!will this work?
 							
 				s+='//ATTENTION: GLOBAL VARIABLE FOLLOWING! | SIZE: ptr'
 			else:
@@ -862,7 +863,7 @@ class CustomCGenerator(object):
 				
 			s+='|| EXTRA_STUFF::: original_c_decl="'+original_c_decl+'"'
 			s+='\n'
-			s+=original_c_decl+';\n'
+			s+=new_c_decl+';\n'
 			#!!!attention: add support for typedefs etc!
 			global_def+=s
 		return global_def
