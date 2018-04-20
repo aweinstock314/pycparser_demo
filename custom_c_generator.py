@@ -837,7 +837,9 @@ class CustomCGenerator(object):
 		global_def=''
 		for global_decl in global_decls:
 			name_of_var=global_decl[0][1]['name']
-			original_c_decl=get_original_C_code_of_ast(global_decl[0][1]['pycparser_ast'])
+			ast_of_last_decl=global_decl[0][1]['ast_of_last_proper_Decl']
+			ast_of_last_decl.init=None #erase init
+			original_c_decl=get_original_C_code_of_ast(ast_of_last_decl)
 			type_of_var=global_decl[0][0]
 			#!!!! add typedefs support
 			if type_of_var=='struct' and decl==global_decl[0][1]["name_of_struct_variable"]==None:
