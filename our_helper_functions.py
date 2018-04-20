@@ -237,6 +237,7 @@ def get_size_of_type(name,typedefs):
 		sys.exit(-1)
 
 
+
 def get_original_C_code_of_ast(ast):
 	new_ast = copy.deepcopy(ast)
 	generator = pycparser.c_generator.CGenerator() #that's the proper (pycparser) generator, not our custom
@@ -244,6 +245,26 @@ def get_original_C_code_of_ast(ast):
 	return (original_c_lines)
 
 
-def get_type_of_ast(ast):
-	new_ast = copy.deepcopy(ast)
-	return get_original_C_code_of_ast(new_ast)
+def get_type_of_ast_dict(ast_dict):
+	type_list=[]
+	element_in_question=ast_dict
+	type_of_elem=element_in_question[0][0]
+	if type_of_elem=="array" or type_of_elem=="struct":
+		print("array and struct not supported yet for type of ast dict!")
+		print(ast_dict)
+		sys.exit(-1)
+	end=0
+	while end==0:
+		if (type_of_elem=="pointer"):
+			type_list.append("*")
+			element_in_question=element_in_question["type_of_pointed_element"]
+			type_of_elem=element_in_question[0][0]
+		elif type_of_elem=="array" or type_of_elem=="struct":
+			print("array and struct not supported yet for type of ast dict!")
+			print(ast_dict)
+			sys.exit(-1)
+		else:
+			#eg "int"
+			type_list.append(type_of_elem)
+			end=1
+	return ''.join(reversed(type_list))

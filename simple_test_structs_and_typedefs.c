@@ -1,5 +1,6 @@
 int x;
 int y[100];
+int** xyxy[10];
 
 
 typedef struct boom

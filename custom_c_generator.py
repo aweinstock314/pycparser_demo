@@ -146,7 +146,7 @@ class CustomCGenerator(object):
 		
 		size_of_array_var=dict_of_array_var[1]
 		type_of_array_var=dict_of_array_var[0][0]
-		C_code_for_type_of_array_var=get_type_of_ast(dict_of_array_var[0][1]["pycparser_ast"])
+		C_code_for_type_of_array_var=get_type_of_ast_dict(dict_of_array_var)
 		
 		if (is_typical_normal_var(type_of_array_var)):
 			print("ERROR: Not yet supported array subscript")
@@ -411,6 +411,7 @@ class CustomCGenerator(object):
 		!!!probably that will be done on the fly, since we have the parse tree	  
 		'''
 		return s
+		#!!!! fix
 		if (self.name_of_fun_in_parsing=='main'):
 			#malloc global arrays
 			for type_of_var in ['char','int','long','float','double','ptr']:
@@ -452,6 +453,7 @@ class CustomCGenerator(object):
 
 	def visit_FileAST(self, n):
 		s = ''
+		s+=self.give_global_definition()
 		for ext in n.ext:
 			if isinstance(ext, c_ast.FuncDef):
 				s += self.visit(ext)
@@ -833,32 +835,33 @@ class CustomCGenerator(object):
 		'''
 		global_decls=self.global_decls
 		global_def=''
-		max_global_decl_num=global_decls['global_decl_order']
-		for declared_var_order in range(1,max_global_decl_num):
-			(var_type,dict_of_var)=find_variable_with_certain_global_order(declared_var_order,'order_of_decl',global_decls)
-			name_of_var=dict_of_var['name']
-			original_c_decl=dict_of_var['original_c_decl']
+		for global_decl in global_decls:
+			name_of_var=global_decl[0][1]['name']
+			original_c_decl=get_original_C_code_of_ast(global_decl[0][1]['pycparser_ast'])
+			type_of_var=global_decl[0][0]
+			#!!!! add typedefs support
+			if type_of_var=='struct' and decl==global_decl[0][1]["name_of_struct_variable"]==None:
+				continue #it's just the declaration of a struct
+			replace_with_ptr=0
 			s=''
-			if var_type=='simple_var':
-				#!!!attention: add support for typedefs etc!
-				s+='//ATTENTION: GLOBAL VARIABLE FOLLOWING! | SIZE:'+dict_of_var['type']
-				s+='|| EXTRA_STUFF::: full_type='+dict_of_var['full_type']
-				s+='\n'
-				s+=original_c_decl+';\n'
-			if var_type=="array":
-				type_of_array_elem=dict_of_var['type_of_array_elem']
-				s+='//ATTENTION: GLOBAL VARIABLE FOLLOWING! | SIZE: ptr' 
-				s+='|| EXTRA_STUFF::: is_created_because_of=array, type_of_array_element='+dict_of_var['type_of_array_elem']+', full_type='+dict_of_var['full_type']
-				s+='\n'
-				type_of_array_elem_in_c_decl=original_c_decl.split(name_of_var)[0]
-				s+=type_of_array_elem_in_c_decl+' '+name_of_var+';\n'
-			if var_type=='struct':
-				s+='//ATTENTION: GLOBAL VARIABLE FOLLOWING! | SIZE: ptr' 
-				s+='|| EXTRA_STUFF::: is_created_because_of=struct, name_of_struct='+dict_of_var['name_of_type_of_struct']+', full_type='+dict_of_var['full_type']
-				s+='\n'
-				type_of_struct_elem_in_c_decl=original_c_decl.split(name_of_var)[0]
-				s+=type_of_struct_elem_in_c_decl+' '+name_of_var+';\n'
+			if type_of_var=='struct' or type_of_var=='array':
+				#we have to replace it with a ptr
+				replace_with_ptr=1
+				if type_of_var=='struct':
+					name_of_var=global_decl[0][1]["name_of_struct_variable"]
+					original_c_decl=('* '+name_of_var+'').join(original_c_decl.split(name_of_var,1)) #change the original c decl to be a pointer to what was there before
+				elif type_of_var=='array':
+					element_c_decl=get_type_of_ast_dict(global_decl[0][1]['type_of_array_element']) #use this or next line?
+					original_c_decl=('* '+name_of_var+'').join(original_c_decl.split(name_of_var,1)) #!!!!will this work?
+							
+				s+='//ATTENTION: GLOBAL VARIABLE FOLLOWING! | SIZE: ptr'
+			else:
+				s+='//ATTENTION: GLOBAL VARIABLE FOLLOWING! | SIZE: '+type_of_var
 				
+			s+='|| EXTRA_STUFF::: original_c_decl="'+original_c_decl+'"'
+			s+='\n'
+			s+=original_c_decl+';\n'
+			#!!!attention: add support for typedefs etc!
 			global_def+=s
 		return global_def
 			
