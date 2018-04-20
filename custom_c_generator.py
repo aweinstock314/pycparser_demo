@@ -266,9 +266,6 @@ class CustomCGenerator(object):
 
 	def visit_Assignment(self, n,**kwargs):
 		dict_of_rvalue=to_dict(n.rvalue)
-		if (dict_of_rvalue["_nodetype"]=="FuncCall"):
-			#use our implementation. But take care of the +=, -= etc !!!!!!!!!!!!!!!
-			pass
 		rval_str = self._parenthesize_if(
 							n.rvalue,
 							lambda n: isinstance(n, c_ast.Assignment),**kwargs)
@@ -305,22 +302,26 @@ class CustomCGenerator(object):
 	def visit_Decl(self, n, no_type=False):
 		# no_type is used when a Decl is part of a DeclList, where the type is
 		# explicitly only for the first declaration in a list.
-		#!!!!! we don't want any decl! we will do everything manually!
+		#!!! hmm no decls should be created right?
 		return ''
+		'''
 		s = n.name if no_type else self._generate_decl(n)
 		if n.bitsize: s += ' : ' + self.visit(n.bitsize)
 		if n.init:
 			s += ' = ' + self._visit_expr(n.init)
 		return s
+		'''
 
 	def visit_DeclList(self, n):
 		#!!! hmm no decls should be created right?
 		return ''
+		'''
 		s = self.visit(n.decls[0])
 		if len(n.decls) > 1:
 			s += ', ' + ', '.join(self.visit_Decl(decl, no_type=True)
 									for decl in n.decls[1:])
 		return s
+		'''
 
 	def visit_Typedef(self, n):
 		s = ''
@@ -410,20 +411,33 @@ class CustomCGenerator(object):
 				s+='//ALLOCATE STACK DATA OF SIZE: ('+self.visit(dimension_ast)+')*'+str(fun_dict["locals"]['ptr']["size_of_pointed_elements"][i])+' | SETTER FOR THEM AND VAR : SET_STACK_PTR('+fun_dict["locals"]['ptr']["names"][i]+', \n'
 		!!!probably that will be done on the fly, since we have the parse tree	  
 		'''
-		return s
-		#!!!! fix
+		s+='\n'
+		s+='//Allocation of global arrays/structs, if any, and initialization of globals\n'
 		if (self.name_of_fun_in_parsing=='main'):
 			#malloc global arrays
-			for type_of_var in ['char','int','long','float','double','ptr']:
-				for i,name in enumerate(global_decls['1_dim_array_of_'+type_of_var]["names"]):
-					s+='UPDATE_GLOBAL_VAR('+name+', {{{HEY PYTHON CALL FUNCTION WITH NEW TEMPLATE: smalloc | HELPING ARGS FOR FUN CALL:  |PARAMETERS TO CALL WITH : ('+self.visit(global_decls['1_dim_array_of_'+type_of_var]["dimension_asts"][i])+')*'+str(global_decls['1_dim_array_of_'+type_of_var]["size_of_pointed_elements"][i])+' }}});\n'
+			for global_decl in global_decls:
+				if global_decl[0][0]=="array" or (global_decl[0][0]=="struct" and "name_of_struct_variable" in global_decl[0][1]):
+					size_of_decl=global_decl[1]
+					if size_of_decl<0:
+						print("array or struct with variable size, not yet supported")
+						print(global_decl)
+						sys.exit(-1)
+					name=global_decl[0][1]["name"]
+					if global_decl[0][0]=="struct":
+						name=global_decl[0][1]["name_of_struct_variable"]
+					#the global array/struct is declated as a pointer, lets malloc
+					s+='UPDATE_GLOBAL_VAR(globals.'+name+', {{{HEY PYTHON CALL FUNCTION WITH NEW TEMPLATE: smalloc | HELPING ARGS FOR FUN CALL:  |PARAMETERS TO CALL WITH : '+str(size_of_decl)+' }}});\n'
+				
+			
 			#init the global vars that ask for initialization
-			for order in range (1,global_init_order):
-				#search the global vars
-				for type_of_var in ['char','int','long','float','double','ptr']:
-					for i,name in enumerate(global_decls[type_of_var]["names"]):
-						if (global_decls[type_of_var]['init'][i]!=None and global_decls[type_of_var]['order_of_init'][i]==order):
-							s+='UPDATE_GLOBAL_VAR('+name+','+self.visit(global_decls[type_of_var]['init'][i])+');\n'
+			for global_decl in global_decls:
+				if 'init' in global_decl[0][1] and  global_decl[0][1]['init']!=None:
+					if global_decl[0][0]=='array' or global_decl[0][0]=='struct':
+						print("Initialization of arrays/structs is not supported yet")
+						print(global_decl)
+						sys.exit(-1)
+					name=global_decl[0][1]["name"]
+					s+='UPDATE_GLOBAL_VAR(globals.'+name+','+self.visit(global_decl[0][1]['init'])+');\n'
 		return (s+"\n")
 
 	def get_original_declaration_of_locals(self,n):
@@ -445,7 +459,7 @@ class CustomCGenerator(object):
 		self.indent_level = 0
 		end_point_str="END_OF_FUNCTION:" + self.name_of_fun_in_parsing
 		if n.param_decls:
-			#does not happen since we have erased the parameter declarations
+			#!!! does not happen, but why? I can't find any case where param_decls exists
 			knrdecls = ';\n'.join(self.visit(p) for p in n.param_decls)
 			return decl + '\n' + knrdecls + ';\n' + body + '\n' + end_point_str+"\n"
 		else:
@@ -469,8 +483,7 @@ class CustomCGenerator(object):
 		kwargs["you_are_body"]=False #revert to old value
 		self.indent_level += 2
 		if (am_body):
-			#init_fun_params=self.add_function_locals_initialization() #initialize locals
-			init_fun_params='' #!!!tofix			
+			init_fun_params='' #old, when we had the function locals initialization here
 			s+=init_fun_params+'\n'
 		if n.block_items:
 			s += ''.join(self._generate_stmt(stmt) for stmt in n.block_items)
