@@ -57,7 +57,7 @@ def typetorepr(node, word_size=8,**kwargs):
 			return (['array', (ty, sz), n], n*sz)
 		else:
 			return (['array',
-					{"type":"array", "name":get_name_of_a_node(parent_node) , "type_of_array_element":(ty, sz), "num_of_array_elements:":n, "size":n*sz , "init":ast_of_last_decl_init,"pycparser_ast":copy.deepcopy(node)}],
+					{"type":"array", "name":get_name_of_a_node(parent_node) , "type_of_array_element":(ty, sz), "num_of_array_elements:":n, "size":n*sz , "init":ast_of_last_decl_init,"pycparser_ast":copy.deepcopy(node), "parent_node":parent_node}],
 					n*sz)
 	
 	if isinstance(node, pycparser.c_ast.Struct):
@@ -74,7 +74,7 @@ def typetorepr(node, word_size=8,**kwargs):
 			retval=(['struct', node.name, types], size)
 		else:
 			retval= (['struct',
-					{"type":"struct", "name":node.name, "name_of_struct_variable":get_name_of_a_node(parent_node), "size":size,  "struct_elements":types ,"pycparser_ast":copy.deepcopy(node)}], 
+					{"type":"struct", "name":node.name, "name_of_struct_variable":get_name_of_a_node(parent_node), "size":size,  "struct_elements":types ,"pycparser_ast":copy.deepcopy(node), "parent_node":parent_node}], 
 					size)
 		if node.name not in all_structs_dict:
 			struct_dict=copy.deepcopy(retval)
@@ -87,7 +87,7 @@ def typetorepr(node, word_size=8,**kwargs):
 			return (['pointer', typetorepr(node.type,**kwargs)], word_size)
 		else:
 			return (['pointer',
-					{"type":"pointer", "name":get_name_of_a_node(parent_node) , "type_of_pointed_element":typetorepr(node.type,**kwargs), "size":word_size , "init":ast_of_last_decl_init, "pycparser_ast":copy.deepcopy(node)}],
+					{"type":"pointer", "name":get_name_of_a_node(parent_node) , "type_of_pointed_element":typetorepr(node.type,**kwargs), "size":word_size , "init":ast_of_last_decl_init, "pycparser_ast":copy.deepcopy(node), "parent_node":parent_node}],
 					word_size)
 
 	if isinstance(node, pycparser.c_ast.IdentifierType):
@@ -97,7 +97,7 @@ def typetorepr(node, word_size=8,**kwargs):
 			return (name, size)
 		else:
 			return ([name,
-					{"type":name, "name":get_name_of_a_node(parent_node),"size":size , "init":ast_of_last_decl_init, "pycparser_ast":copy.deepcopy(node)}],
+					{"type":name, "name":get_name_of_a_node(parent_node),"size":size , "init":ast_of_last_decl_init, "pycparser_ast":copy.deepcopy(node), "parent_node":parent_node}],
 					size)
 
 	if isinstance(node, pycparser.c_ast.FuncDecl):
@@ -108,7 +108,7 @@ def typetorepr(node, word_size=8,**kwargs):
 			return (['function',list_with_arguments_parse , return_value_parse], None)
 		else:
 			return (['function decl',
-					{"type":"function decl", "name":get_name_of_a_node(parent_node) , "list_of_arguments":list_with_arguments_parse, "return_value":return_value_parse , "pycparser_ast":copy.deepcopy(node)}],
+					{"type":"function decl", "name":get_name_of_a_node(parent_node) , "list_of_arguments":list_with_arguments_parse, "return_value":return_value_parse , "pycparser_ast":copy.deepcopy(node), "parent_node":parent_node}],
 					None)
 		
 	if isinstance(node, (pycparser.c_ast.Decl, pycparser.c_ast.TypeDecl, pycparser.c_ast.Typename)):
