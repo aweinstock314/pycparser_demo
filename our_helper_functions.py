@@ -257,7 +257,7 @@ def get_type_of_ast_dict(ast_dict):
 	while end==0:
 		if (type_of_elem=="pointer"):
 			type_list.append("*")
-			element_in_question=element_in_question["type_of_pointed_element"]
+			element_in_question=element_in_question[0][1]["type_of_pointed_element"]
 			type_of_elem=element_in_question[0][0]
 		elif type_of_elem=="array" or type_of_elem=="struct":
 			print("array and struct not supported yet for type of ast dict!")

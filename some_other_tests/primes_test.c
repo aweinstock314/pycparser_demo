@@ -46,10 +46,12 @@ void find_primes_up_to_a_number(int num)
 	{
 		printf("%d ",primes_found_so_far[i]);
 	}
+	
 	printf("\n\n");
 	printf("Total number of primes:%d\n",num_of_primes);
 	
 	
 	free(primes_found_so_far);
+	
 }
 

@@ -77,32 +77,33 @@ class CustomCGenerator(object):
 			is_global=1
 			
 		type_of_var_proper=type_of_var
+		C_code_for_type_of_var=get_type_of_ast_dict(dict_of_var)
 
 		if (get_address_of_expr): #an "&" is before us
 			if (is_global==0):
-				return "(%s*)%s" % (type_of_var_proper,n.name)
+				return "(%s*)%s" % (C_code_for_type_of_var,n.name)
 			else:
-				return "(%s*)globals.%s" % (type_of_var_proper,n.name)
+				return "(%s*)globals.%s" % (C_code_for_type_of_var,n.name)
  
 
 		if (use_setter):
 			if (is_global==0):
 				setter=find_name_of_stack_setter_in_caps(type_of_var_proper)
 				#pay attention that we need an extra parenthesis
-				return "(%s)%s( %s " % (type_of_var_proper,setter,n.name)
+				return "(%s)%s( %s " % (C_code_for_type_of_var,setter,n.name)
 			else:
 				#pay attention that we need an extra parenthesis
 				if (coming_from_for_loop==False):
-					return "(%s)%s( globals.%s " % (type_of_var_proper,"UPDATE_GLOBAL_VAR",n.name)
+					return "(%s)%s( globals.%s " % (C_code_for_type_of_var,"UPDATE_GLOBAL_VAR",n.name)
 				else:
-					return "(%s)%s( globals.%s " % (type_of_var_proper,"UPDATE_GLOBAL_VAR_FOR_LOOPS",n.name)
+					return "(%s)%s( globals.%s " % (C_code_for_type_of_var,"UPDATE_GLOBAL_VAR_FOR_LOOPS",n.name)
 		else:
 			getter=find_name_of_stack_getter_in_caps(type_of_var_proper)
 			if (is_global==1):
 				getter=find_name_of_global_getter(type_of_var_proper)
-				return "(%s)%s( globals.%s )" % (type_of_var_proper,getter,n.name)
+				return "(%s)%s( globals.%s )" % (C_code_for_type_of_var,getter,n.name)
 			else:
-				return "(%s)%s( %s )" % (type_of_var_proper,getter,n.name)
+				return "(%s)%s( %s )" % (C_code_for_type_of_var,getter,n.name)
 	
 	
 	def visit_Pragma(self, n):
@@ -132,11 +133,11 @@ class CustomCGenerator(object):
 		type_of_var_proper=type_of_var
 		
 		if type_of_var_proper=="array":
-			dict_of_array_var=dict_of_array[0][1]['type_of_array_elem']
+			dict_of_array_var=dict_of_array[0][1]['type_of_array_element']
 			is_array=1
 		elif type_of_var_proper=="pointer":
 			#it's a pointer that has been malloced and accessed as array?
-			dict_of_array_var=dict_of_array[0][1]['type_of_pointed_elem']
+			dict_of_array_var=dict_of_array[0][1]['type_of_pointed_element']
 			is_array=0
 		else:
 			print("Strange variable type!")
@@ -148,7 +149,7 @@ class CustomCGenerator(object):
 		type_of_array_var=dict_of_array_var[0][0]
 		C_code_for_type_of_array_var=get_type_of_ast_dict(dict_of_array_var)
 		
-		if (is_typical_normal_var(type_of_array_var)):
+		if (is_typical_normal_var(type_of_array_var)==False):
 			print("ERROR: Not yet supported array subscript")
 			print(name_of_array,type_of_var,dict_of_array_var,dict_of_array,n)
 			sys.exit(-1)
@@ -196,13 +197,13 @@ class CustomCGenerator(object):
 			if (is_global==1):
 				#it is a global array, therefore it is replaced with a pointer with the same name
 				getter=find_name_of_sheap_array_getter(type_of_array_var)
-				return "(%s)%s( GET_GLOBAL_PTR(globals.%s) , %s )" % (C_code_for_type_of_array_var,getter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
+				return "(%s)%s( GET_GLOBAL_PTR(globals.%s) , %s )" % (C_code_for_type_of_array_var,getter,name_of_array,self.visit(n.subscript))
 			else:
 				if (is_array==1):
 					getter=find_name_of_stack_array_getter(type_of_array_var)
 				else:
 					#it's a pointer and has been malloc'ed
-					getter==find_name_of_sheap_array_getter(type_of_array_var)
+					getter=find_name_of_sheap_array_getter(type_of_array_var)
 				if (type_of_var_proper=='pointer'):
 					return "(%s)%s( GET_STACK_PTR(%s) , %s )" % (C_code_for_type_of_array_var,getter,name_of_array,self.visit(n.subscript))
 				else:
