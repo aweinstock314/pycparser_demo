@@ -210,7 +210,12 @@ class CustomCGenerator(object):
 					return "(%s)%s( %s , %s )" % (C_code_for_type_of_array_var,getter,name_of_array,self.visit(n.subscript))
 
 	def visit_StructRef(self, n,**kwargs):
-		sref = self._parenthesize_unless_simple(n.name)
+		use_setter=kwargs.get("use_setter_param",False)
+		get_address_of_expr=kwargs.get("get_address_of_expr",False); kwargs["get_address_of_expr"]=False
+		get_dereference_of_expr=kwargs.get("get_dereference_of_expr",False);kwargs["get_dereference_of_expr"]=False
+		#sref is the name actually, and will be an ID. I think so at least!!! .
+		#We should not call the ID after it because it will try to find getters/setters etc
+		#sref = self._parenthesize_unless_simple(n.name)
 		name_of_struct=n.name
 		name_of_struct_field=get_original_C_code_of_ast(n.field)
 		(where_found,type_in_vars,tuple_of_var,struct_description,size_of_whole_struct,size_of_elem_in_question,size_of_elements_so_far)=self.find_struct_dict_and_offset(name_of_struct,name_of_struct_field,self.name_of_fun_in_parsing)

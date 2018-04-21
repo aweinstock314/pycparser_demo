@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
 	y=y+1;y++;
 	*/
 
-    //g.g1=1;
+    g.g1=1;
 
 	return 0;
 }
