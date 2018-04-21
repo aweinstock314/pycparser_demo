@@ -250,7 +250,7 @@ def get_type_of_ast_dict(ast_dict):
 	element_in_question=ast_dict
 	type_of_elem=element_in_question[0][0]
 	if type_of_elem=="array" or type_of_elem=="struct":
-		print("array and struct not supported yet for type of ast dict!")
+		print("array and struct not supported yet for type of ast dict! 1")
 		print(ast_dict)
 		sys.exit(-1)
 	end=0
@@ -260,7 +260,7 @@ def get_type_of_ast_dict(ast_dict):
 			element_in_question=element_in_question[0][1]["type_of_pointed_element"]
 			type_of_elem=element_in_question[0][0]
 		elif type_of_elem=="array" or type_of_elem=="struct":
-			print("array and struct not supported yet for type of ast dict!")
+			print("array and struct not supported yet for type of ast dict! 2")
 			print(ast_dict)
 			sys.exit(-1)
 		else:

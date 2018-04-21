@@ -209,7 +209,7 @@ class CustomCGenerator(object):
 				else:
 					return "(%s)%s( %s , %s )" % (C_code_for_type_of_array_var,getter,name_of_array,self.visit(n.subscript))
 
-	def visit_StructRef(self, n):
+	def visit_StructRef(self, n,**kwargs):
 		sref = self._parenthesize_unless_simple(n.name)
 		name_of_struct=n.name
 		name_of_struct_field=get_original_C_code_of_ast(n.field)
@@ -417,7 +417,7 @@ class CustomCGenerator(object):
 		if (self.name_of_fun_in_parsing=='main'):
 			#malloc global arrays
 			for global_decl in global_decls:
-				if global_decl[0][0]=="array" or (global_decl[0][0]=="struct" and "name_of_struct_variable" in global_decl[0][1]):
+				if global_decl[0][0]=="array" or (global_decl[0][0]=="struct" and "name_of_struct_variable" in global_decl[0][1] and global_decl[0][1]["name_of_struct_variable"]):
 					size_of_decl=global_decl[1]
 					if size_of_decl<0:
 						print("array or struct with variable size, not yet supported")
@@ -857,7 +857,7 @@ class CustomCGenerator(object):
 			new_c_decl=original_c_decl
 			type_of_var=global_decl[0][0]
 			#!!!! add typedefs support
-			if type_of_var=='struct' and decl==global_decl[0][1]["name_of_struct_variable"]==None:
+			if type_of_var=='struct' and global_decl[0][1]["name_of_struct_variable"]==None:
 				continue #it's just the declaration of a struct
 			replace_with_ptr=0
 			s=''

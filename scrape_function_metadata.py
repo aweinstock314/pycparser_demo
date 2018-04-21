@@ -71,14 +71,15 @@ def typetorepr(node, word_size=8,**kwargs):
 				types.append((ty, sz))
 				size += sz
 		else:
-			#if the struct is already present in the known structs, fetch the size from there
+			#if the struct is already present in the known structs, fetch the size and elements from there
 			if node.name in all_structs_dict:
 				size=all_structs_dict[node.name][1]
+				types=copy.deepcopy(all_structs_dict[node.name][0][1]['struct_elements'])
 		if (give_small_output):
 			retval=(['struct', node.name, types], size)
 		else:
 			retval= (['struct',
-					{"type":"struct", "name":node.name, "name_of_struct_variable":get_name_of_a_node(parent_node), "size":size,  "struct_elements":types ,"pycparser_ast":copy.deepcopy(node), "parent_node":parent_node, "ast_of_last_proper_Decl":ast_of_last_proper_Decl}], 
+					{"type":"struct", "name":node.name, "name_of_struct_variable":get_name_of_a_node(parent_node), "size":size, "init":ast_of_last_decl_init, "struct_elements":types ,"pycparser_ast":copy.deepcopy(node), "parent_node":parent_node, "ast_of_last_proper_Decl":ast_of_last_proper_Decl}], 
 					size)
 		if node.name not in all_structs_dict:
 			struct_dict=copy.deepcopy(retval)
