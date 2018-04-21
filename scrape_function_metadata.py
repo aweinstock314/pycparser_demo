@@ -70,7 +70,10 @@ def typetorepr(node, word_size=8,**kwargs):
 				ty, sz = typetorepr(decl,**kwargs)
 				types.append((ty, sz))
 				size += sz
-	   
+		else:
+			#if the struct is already present in the known structs, fetch the size from there
+			if node.name in all_structs_dict:
+				size=all_structs_dict[node.name][1]
 		if (give_small_output):
 			retval=(['struct', node.name, types], size)
 		else:
@@ -152,12 +155,14 @@ for node in listify(ast):
 		print ('\t', function_types[name_of_fun])
 
 
-print("\nFUNCTIONS:\n")
+print("\n\nFUNCTIONS:\n")
 if (give_small_output):
 	print(function_types)
 else:
 	for x in function_types:
-		print(x," : ",function_types[x])
+		print("\n",x," : ")
+		print("\t\t function decl:",function_types[x]["fun_decl"])
+		print("\t\t function locals:",function_types[x]["fun_locals"])
 print("\nGLOBAL DECLS:\n")
 if (give_small_output):
 	print(global_decls)
