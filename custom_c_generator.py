@@ -63,11 +63,14 @@ class CustomCGenerator(object):
 		return n.value
 
 	def visit_ID(self, n,**kwargs):
-		use_setter=kwargs.get("use_setter_param",False)
+		use_setter=kwargs.get("use_setter_param",False); kwargs["use_setter_param"]=False
 		coming_from_for_loop=kwargs.get("coming_from_for_loop",False)
 		get_address_of_expr=kwargs.get("get_address_of_expr",False) ; kwargs["get_address_of_expr"]=False
 		get_dereference_of_expr=kwargs.get("get_dereference_of_expr",False);kwargs["get_dereference_of_expr"]=False
+		
 		is_global=0
+		
+		
 		(where_found,type_of_var,dict_of_var)=self.find_variable_in_fun_and_global_variables(self.name_of_fun_in_parsing,n.name) #try to find it in the known variables
 		if (where_found=="variable_was_not_found"):
 			#"printf" is an ID too. So, it might not be one of the secured variables
@@ -113,14 +116,21 @@ class CustomCGenerator(object):
 		return ret
 	
 	def visit_ArrayRef(self, n,**kwargs):
-		use_setter=kwargs.get("use_setter_param",False)
+		use_setter=kwargs.get("use_setter_param",False); kwargs["use_setter_param"]=False
 		get_address_of_expr=kwargs.get("get_address_of_expr",False); kwargs["get_address_of_expr"]=False
 		get_dereference_of_expr=kwargs.get("get_dereference_of_expr",False);kwargs["get_dereference_of_expr"]=False
-		name_of_array=n.name.name
-		is_global=0
+		
 		is_array=1 # might be a malloc'ed pointer which is accessed as array
-		#search in variables
-		(where_found,type_of_var,dict_of_array)=self.find_variable_in_fun_and_global_variables(self.name_of_fun_in_parsing,name_of_array)
+		
+		if isinstance(n.name, pycparser.c_ast.StructRef):
+			kwargs["we_need_array_addr"]=True
+			(where_found,type_of_var,dict_of_array,name_of_array)=self.visit_StructRef(n.name,**kwargs)
+			is_global=0
+		else:
+			name_of_array=n.name.name
+			is_global=0
+			#search in variables
+			(where_found,type_of_var,dict_of_array)=self.find_variable_in_fun_and_global_variables(self.name_of_fun_in_parsing,name_of_array)
 		
 		if (where_found=="variable_was_not_found"):
 			#It might not be one of the secured variables, return what it would return normally
@@ -242,18 +252,21 @@ class CustomCGenerator(object):
 		}
 
 		'''
-		use_setter=kwargs.get("use_setter_param",False)
+		use_setter=kwargs.get("use_setter_param",False); kwargs["use_setter_param"]=False
 		get_address_of_expr=kwargs.get("get_address_of_expr",False); kwargs["get_address_of_expr"]=False
 		get_dereference_of_expr=kwargs.get("get_dereference_of_expr",False);kwargs["get_dereference_of_expr"]=False
+		we_need_array_addr=kwargs.get("we_need_array_addr",False)
+		
+		is_global=0
 		#sref is the name actually, and will be an ID. I think so at least!!! .
 		#We should not call the ID after it because it will try to find getters/setters etc
 		#old version: sref = self._parenthesize_unless_simple(n.name)
 		sref=n.name
-		if n.name.__nodetype!="ID":
+		if isinstance(n.name,pycparser.c_ast.ID)==False:
 			print("Struct name field is not an ID...")
 			print(to_dict(n))
 			sys.exit(-1)
-		name_of_struct=n.name
+		name_of_struct=n.name.name
 		name_of_struct_field=get_original_C_code_of_ast(n.field)
 		type_of_struct_access=n.type # "->" or "." ?
 		(where_found,type_in_vars,tuple_of_var,struct_description,size_of_whole_struct,size_of_elem_in_question,elem_in_question_dict,size_of_elements_so_far)=self.find_struct_dict_and_offset(name_of_struct,name_of_struct_field,self.name_of_fun_in_parsing)
@@ -266,6 +279,30 @@ class CustomCGenerator(object):
 			is_global=1
 			
 		type_of_element_in_question=elem_in_question_dict[0][0]
+		
+		if we_need_array_addr:
+			#we need to return to the ArrayRef that has called us
+			where_found="found_in_struct_"+name_of_struct
+			type_of_var=elem_in_question_dict[0][1]["type"]
+			dict_of_array=elem_in_question_dict
+			
+			if type_of_var=="array":
+				dict_of_array_var=elem_in_question_dict[0][1]['type_of_array_element']
+			elif type_of_var_proper=="pointer":
+				#it's a pointer that has been malloced and accessed as array?
+				dict_of_array_var=elem_in_question_dict[0][1]['type_of_pointed_element']
+			else:
+				print("Strange variable type in struct subscript!")
+				print(elem_in_question_dict,to_dict(n))
+				sys.exit(-1)
+
+			C_code_for_type_of_elem_in_question=get_type_of_ast_dict(dict_of_array_var)
+			#the name is what will be printed, return an address
+			name_of_array="(%s*)get_address_of_stack_array_element(1,%s,%s)"  % (C_code_for_type_of_elem_in_question,name_of_struct,size_of_elements_so_far)
+			return (where_found,type_of_var,dict_of_array,name_of_array)
+			
+			
+			
 		C_code_for_type_of_elem_in_question=get_type_of_ast_dict(elem_in_question_dict)
 		
 		if type_of_struct_access==".":
@@ -273,33 +310,57 @@ class CustomCGenerator(object):
 			if (get_address_of_expr): #an "&" is before us
 				if (is_global==0):
 					#I don't think that a specific memory access is required to fetch the struct start itself, in a similar case gcc gave "mov	DWORD PTR [rbp-48+rax*4], 6" for a struct access
-					return "(%s*)get_address_of_stack_array_element(1,%s,%s)" % (C_code_for_type_of_elem_in_question,n.name,size_of_elements_so_far)
+					return "(%s*)get_address_of_stack_array_element(1,%s,%s)" % (C_code_for_type_of_elem_in_question,name_of_struct,size_of_elements_so_far)
 				else:
 					#its a malloced pointer!
-					return "(%s*)get_address_of_sheap_array_element(1,*(globals.%s),%s)" % (C_code_for_type_of_elem_in_question,n.name,size_of_elements_so_far)
+					return "(%s*)get_address_of_sheap_array_element(1,*(globals.%s),%s)" % (C_code_for_type_of_elem_in_question,name_of_struct,size_of_elements_so_far)
 		
-			#!!! continue form here. What is subscript is ArrayRef?
+
+			#!!!make sure the memory accesses are paid properly
 			if (use_setter):
+				setter=find_name_of_setter_from_arb_memory_position(type_of_element_in_question)
 				if (is_global==0):
-					setter=find_name_of_stack_array_setter(type_of_element_in_question)
 					#pay attention that we need an extra parenthesis
-					return "(%s)%s( %s ," % (C_code_for_type_of_elem_in_question,setter,n.name)
+					return "(%s)%s( %s , %s " % (C_code_for_type_of_elem_in_question,setter,name_of_struct,size_of_elements_so_far)
 				else:
+					#its a malloced pointer
 					#pay attention that we need an extra parenthesis
-					if (coming_from_for_loop==False):
-						return "(%s)%s( globals.%s " % (C_code_for_type_of_elem_in_question,"UPDATE_GLOBAL_VAR",n.name)
-					else:
-						return "(%s)%s( globals.%s " % (C_code_for_type_of_elem_in_question,"UPDATE_GLOBAL_VAR_FOR_LOOPS",n.name)
+					return "(%s)%s( globals.%s , %s " % (C_code_for_type_of_elem_in_question,setter,name_of_struct,size_of_elements_so_far)
+			else:
+				getter=find_name_of_getter_from_arb_memory_position(type_of_element_in_question)
+				if (is_global==0):
+					return "(%s)%s( %s , %s) " % (C_code_for_type_of_elem_in_question,getter,name_of_struct,size_of_elements_so_far)
+				else:
+					#its a malloced pointer
+					return "(%s)%s( globals.%s , %s) " % (C_code_for_type_of_elem_in_question,getter,name_of_struct,size_of_elements_so_far)
 		
 		elif type_of_struct_access=="->":
 			
 			if (get_address_of_expr): #an "&" is before us
 				if (is_global==0):
 					#I don't think that a specific memory access is required to fetch the struct start itself, in a similar case gcc gave "mov	DWORD PTR [rbp-48+rax*4], 6" for a struct access
-					return "(%s*)get_address_of_stack_array_element(1,GET_STACK_PTR(%s),%s)" % (C_code_for_type_of_elem_in_question,n.name,size_of_elements_so_far)
+					return "(%s*)get_address_of_stack_array_element(1,GET_STACK_PTR(%s),%s)" % (C_code_for_type_of_elem_in_question,name_of_struct,size_of_elements_so_far)
 				else:
 					#its a malloced pointer!
-					return "(%s*)get_address_of_sheap_array_element(1,GET_GLOBAL_PTR(globals.%s),%s)" % (C_code_for_type_of_elem_in_question,n.name,size_of_elements_so_far)
+					return "(%s*)get_address_of_sheap_array_element(1,GET_GLOBAL_PTR(globals.%s),%s)" % (C_code_for_type_of_elem_in_question,name_of_struct,size_of_elements_so_far)
+		
+			#!!!make sure the memory accesses are paid properly
+			if (use_setter):
+				setter=find_name_of_setter_from_arb_memory_position(type_of_element_in_question)
+				if (is_global==0):
+					#pay attention that we need an extra parenthesis
+					return "(%s)%s( GET_STACK_PTR(%s) , %s " % (C_code_for_type_of_elem_in_question,setter,name_of_struct,size_of_elements_so_far)
+				else:
+					#pay attention that we need an extra parenthesis
+					return "(%s)%s( GET_GLOBAL_PTR(globals.%s) , %s " % (C_code_for_type_of_elem_in_question,setter,name_of_struct,size_of_elements_so_far)
+			else:
+				getter=find_name_of_getter_from_arb_memory_position(type_of_element_in_question)
+				if (is_global==0):
+					return "(%s)%s( GET_STACK_PTR(%s) , %s) " % (C_code_for_type_of_elem_in_question,getter,name_of_struct,size_of_elements_so_far)
+				else:
+					#its a malloced pointer
+					return "(%s)%s( GET_GLOBAL_PTR(globals.%s) , %s) " % (C_code_for_type_of_elem_in_question,getter,name_of_struct,size_of_elements_so_far)
+		
 		'''
 		TODO: &, -> , . ,get/set
 		
@@ -902,7 +963,7 @@ class CustomCGenerator(object):
 		all_structs=self.all_structs
 		function_dict=self.functions[name_of_function]
 
-		(where_found,type_in_vars,tuple_of_var)=find_variable_in_fun_and_global_variables(self,name_of_function,name_of_var)
+		(where_found,type_in_vars,tuple_of_var)=self.find_variable_in_fun_and_global_variables(name_of_function,name_of_struct)
 		if where_found=="variable_was_not_found":
 			print("Struct was not found!")
 			print(name_of_struct,name_of_struct_field,name_of_function)
@@ -943,6 +1004,7 @@ class CustomCGenerator(object):
 			if elem[0][1]['name']==name_of_struct_field:
 				size_of_elem_in_question=elem[1]
 				elem_in_question_dict=elem
+				break
 			else:
 				size_of_elements_so_far+=elem[1]
 			   

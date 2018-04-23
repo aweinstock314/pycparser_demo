@@ -12,7 +12,8 @@ struct lol
 int main(int argc, char* argv[])
 {
 	unsigned int y=1;
-    struct lol g;	
+    struct lol g;
+    struct lol* g_ptr;
     x=2;
 	y=3;
     /*
@@ -25,7 +26,10 @@ int main(int argc, char* argv[])
 	y=y+1;y++;
 	*/
 
-    g.g1=1;
+    g.g2=1;
+    g.g4[x]=2;
+    //g_ptr->g3=g.g1;
+    
 
 	return 0;
 }
