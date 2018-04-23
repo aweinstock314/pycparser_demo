@@ -163,7 +163,9 @@ else:
 	for x in function_types:
 		print("\n",x," : ")
 		print("\t\t function decl:",function_types[x]["fun_decl"])
-		print("\t\t function locals:",function_types[x]["fun_locals"])
+		print("\t\t function locals:")
+		for y in function_types[x]["fun_locals"]:
+			print("\t\t\t\t",y[0][1]['name']," : ",y)
 print("\nGLOBAL DECLS:\n")
 if (give_small_output):
 	print(global_decls)

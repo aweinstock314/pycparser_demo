@@ -361,33 +361,8 @@ class CustomCGenerator(object):
 					#its a malloced pointer
 					return "(%s)%s( GET_GLOBAL_PTR(globals.%s) , %s) " % (C_code_for_type_of_elem_in_question,getter,name_of_struct,size_of_elements_so_far)
 		
-		'''
-		TODO: &, -> , . ,get/set
-		
- 
-
-		if (use_setter):
-			if (is_global==0):
-				setter=find_name_of_stack_setter_in_caps(type_of_var_proper)
-				#pay attention that we need an extra parenthesis
-				return "(%s)%s( %s " % (C_code_for_type_of_var,setter,n.name)
-			else:
-				#pay attention that we need an extra parenthesis
-				if (coming_from_for_loop==False):
-					return "(%s)%s( globals.%s " % (C_code_for_type_of_var,"UPDATE_GLOBAL_VAR",n.name)
-				else:
-					return "(%s)%s( globals.%s " % (C_code_for_type_of_var,"UPDATE_GLOBAL_VAR_FOR_LOOPS",n.name)
-		else:
-			getter=find_name_of_stack_getter_in_caps(type_of_var_proper)
-			if (is_global==1):
-				getter=find_name_of_global_getter(type_of_var_proper)
-				return "(%s)%s( globals.%s )" % (C_code_for_type_of_var,getter,n.name)
-			else:
-				return "(%s)%s( %s )" % (C_code_for_type_of_var,getter,n.name)
-		'''
-		
-		#!!!!sos! extend with the access to that
-		return sref + n.type + self.visit(n.field)
+		#old retval
+		#return sref + n.type + self.visit(n.field)
 
 	def visit_FuncCall(self, n,**kwargs):
 		fref = self._parenthesize_unless_simple(n.name)
@@ -968,6 +943,10 @@ class CustomCGenerator(object):
 			print("Struct was not found!")
 			print(name_of_struct,name_of_struct_field,name_of_function)
 			sys.exit(-1)
+		
+		if (type_in_vars=="pointer"):
+			#probably we will have a -> #!!!perhaps we should get rid of x->y 's by replacing them with (*x).y   ......
+			tuple_of_var=tuple_of_var[0][1]["type_of_pointed_element"]
 		
 		struct_variable_name=tuple_of_var[0][1]["name_of_struct_variable"]
 		#so we have a struct variable, lets grab the struct description

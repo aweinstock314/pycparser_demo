@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
 
     g.g2=1;
     g.g4[x]=2;
-    //g_ptr->g3=g.g1;
+    g_ptr->g3=g.g1;
     
 
 	return 0;
