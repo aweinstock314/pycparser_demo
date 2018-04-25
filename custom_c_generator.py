@@ -66,7 +66,7 @@ class CustomCGenerator(object):
 		use_setter=kwargs.get("use_setter_param",False); kwargs["use_setter_param"]=False
 		coming_from_for_loop=kwargs.get("coming_from_for_loop",False)
 		get_address_of_expr=kwargs.get("get_address_of_expr",False) ; kwargs["get_address_of_expr"]=False
-		get_dereference_of_expr=kwargs.get("get_dereference_of_expr",False);kwargs["get_dereference_of_expr"]=False
+		get_dereference_of_expression=kwargs.get("get_dereference_of_expr",False);kwargs["get_dereference_of_expr"]=False
 		
 		is_global=0
 		
@@ -88,26 +88,58 @@ class CustomCGenerator(object):
 			else:
 				return "(%s*)globals.%s" % (C_code_for_type_of_var,n.name)
  
-
+		retstr=''
+		if get_dereference_of_expression: #an "*" is before us
+			if dict_of_var[0][0]!='pointer':
+				print("Got dereference on a non-pointer!")
+				print(dict_of_var)
+				sys.exit(-1)
+			#it is a pointer
+			type_of_pointed_elem_dict=dict_of_var[0][1]["type_of_pointed_element"]
+			C_code_for_type_of_pointed_var=get_type_of_ast_dict(type_of_pointed_elem_dict)
+			if use_setter==False:
+				used_setter_for_dereference=False
+				if (is_global==0):
+					getter=find_name_of_simple_getter(type_of_pointed_elem_dict[0][0])
+					retstr+="(%s)%s( " % (C_code_for_type_of_pointed_var,getter)
+				else:
+					getter=find_name_of_global_getter(type_of_pointed_elem_dict[0][0])
+					retstr+="(%s)%s( " % (C_code_for_type_of_pointed_var,getter)
+			else:
+				if (is_global==0):
+					setter=find_name_of_simple_setter(type_of_pointed_elem_dict[0][0])
+					#pay attention that we need an extra parenthesis
+					retstr+="(%s)%s( " % (C_code_for_type_of_pointed_var,setter)
+				else:
+					setter=find_name_of_global_setter(type_of_pointed_elem_dict[0][0])
+					#pay attention that we need an extra parenthesis
+					retstr+="(%s)%s( " % (C_code_for_type_of_pointed_var,setter)
+				used_setter_for_dereference=True
+				use_setter=False #IMPORTANT! the next part will have to use a getter for the pointer!
+				
+		#normal operation on the ID
 		if (use_setter):
 			if (is_global==0):
 				setter=find_name_of_stack_setter_in_caps(type_of_var_proper)
 				#pay attention that we need an extra parenthesis
-				return "(%s)%s( %s " % (C_code_for_type_of_var,setter,n.name)
+				retstr+= "(%s)%s( %s " % (C_code_for_type_of_var,setter,n.name)
 			else:
 				#pay attention that we need an extra parenthesis
 				if (coming_from_for_loop==False):
-					return "(%s)%s( globals.%s " % (C_code_for_type_of_var,"UPDATE_GLOBAL_VAR",n.name)
+					retstr+= "(%s)%s( globals.%s " % (C_code_for_type_of_var,"UPDATE_GLOBAL_VAR",n.name)
 				else:
-					return "(%s)%s( globals.%s " % (C_code_for_type_of_var,"UPDATE_GLOBAL_VAR_FOR_LOOPS",n.name)
+					retstr+= "(%s)%s( globals.%s " % (C_code_for_type_of_var,"UPDATE_GLOBAL_VAR_FOR_LOOPS",n.name)
 		else:
 			getter=find_name_of_stack_getter_in_caps(type_of_var_proper)
 			if (is_global==1):
 				getter=find_name_of_global_getter(type_of_var_proper)
-				return "(%s)%s( globals.%s )" % (C_code_for_type_of_var,getter,n.name)
+				retstr+= "(%s)%s( globals.%s )" % (C_code_for_type_of_var,getter,n.name)
 			else:
-				return "(%s)%s( %s )" % (C_code_for_type_of_var,getter,n.name)
+				retstr+= "(%s)%s( %s )" % (C_code_for_type_of_var,getter,n.name)
 	
+		if get_dereference_of_expression and used_setter_for_dereference==False: #an "*" is before us
+			retstr+=')'
+		return retstr
 	
 	def visit_Pragma(self, n):
 		ret = '#pragma'
@@ -399,9 +431,9 @@ class CustomCGenerator(object):
 		elif n.op == '&': #!!!! support is not 100% proper...
 			kwargs["get_address_of_expr"]=True
 			return '(%s)' % self.visit(n.expr,**kwargs)
-		elif n.op == '*': #!!!!!!!!!!!!! sos fix this
-			kwargs["get_dereference_of_expr"]=True
-			return '*(%s)' % self.visit(n.expr,**kwargs)
+		elif n.op == '*': #!!!!!!!!!!!!! sos fix this, does not work for pointer arithmetic. Will need to see what type the expr is
+			kwargs["get_dereference_of_expr"]=True 
+			return '(%s)' % self.visit(n.expr,**kwargs)
 		else:
 			return '%s%s' % (n.op, operand) #!!!!! cast?
 
@@ -419,11 +451,11 @@ class CustomCGenerator(object):
 							lambda n: isinstance(n, c_ast.Assignment),**kwargs)
 		#return '%s %s %s' % (self.visit(n.lvalue), n.op, rval_str)
 		if n.op=="=":
-			if (to_dict(n.lvalue)["_nodetype"]=="UnaryOp"):
-				return '%s=%s' % (self.visit(n.lvalue,**kwargs), rval_str)
-			else:
-				kwargs["use_setter_param"]=True
-				return '%s, %s)' % (self.visit(n.lvalue,**kwargs), rval_str)
+			#if (to_dict(n.lvalue)["_nodetype"]=="UnaryOp"): #old
+			#	return '%s=%s' % (self.visit(n.lvalue,**kwargs), rval_str)
+			#else:
+			kwargs["use_setter_param"]=True
+			return '%s, %s)' % (self.visit(n.lvalue,**kwargs), rval_str)
 		elif (len(n.op)==2 and n.op[1]=="="): #+= , -= etc
 			kwargs_1=copy.deepcopy(kwargs)
 			kwargs_2=copy.deepcopy(kwargs)
