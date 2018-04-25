@@ -27,7 +27,7 @@ struct lol hehe;
 
 
 
-int a_fun(int x,int* y)
+void a_fun(int x,int* y)
 {
     int b=1;
     int *c;

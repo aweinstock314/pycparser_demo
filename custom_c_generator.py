@@ -519,7 +519,8 @@ class CustomCGenerator(object):
 		visited_subexprs = []
 		for expr in n.exprs:
 			if (these_are_function_args):
-				str_to_append=replace_comma_with_at_outside_funcall(self._visit_expr(expr))
+				#str_to_append=replace_comma_with_at_outside_funcall(self._visit_expr(expr))
+				str_to_append=self._visit_expr(expr) #don't replace with "@", makes life harder
 			else:
 				str_to_append=self._visit_expr(expr)
 			visited_subexprs.append(str_to_append)
