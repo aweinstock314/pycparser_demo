@@ -1,6 +1,7 @@
 int x=1;
 char *z=3;
 int m[10];
+int m2[20][10];
 struct lol
 {
     int g1;
@@ -23,6 +24,11 @@ int main()
     struct lol* g_ptr;
     x=2;
 	y=3;
+	int arr[10][10];
+
+	arr[4][2]=2;
+	arr[0][9]=arr[y][y];
+	m2[0][arr[1][1]]=1;
     /*
 	for (x=0;x<y;x++)
 		printf("%d\n",x);

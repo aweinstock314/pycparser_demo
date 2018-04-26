@@ -323,18 +323,22 @@ def get_type_of_ast_dict(ast_dict):
 	type_list=[]
 	element_in_question=ast_dict
 	type_of_elem=element_in_question[0][0]
-	if type_of_elem=="array" or type_of_elem=="struct":
-		print("array and struct not supported yet for type of ast dict! 1")
+	if type_of_elem=="struct":
+		print("Struct not supported yet for type of ast dict! 1")
 		print(ast_dict)
 		sys.exit(-1)
 	end=0
 	while end==0:
+		if type_of_elem=="array":
+			type_list.append("[]")
+			element_in_question=element_in_question[0][1]["type_of_array_element"]
+			type_of_elem=element_in_question[0][0]
 		if (type_of_elem=="pointer"):
 			type_list.append("*")
 			element_in_question=element_in_question[0][1]["type_of_pointed_element"]
 			type_of_elem=element_in_question[0][0]
-		elif type_of_elem=="array" or type_of_elem=="struct":
-			print("array and struct not supported yet for type of ast dict! 2")
+		elif type_of_elem=="struct":
+			print("Struct not supported yet for type of ast dict! 2")
 			print(ast_dict)
 			sys.exit(-1)
 		else:
@@ -342,3 +346,39 @@ def get_type_of_ast_dict(ast_dict):
 			type_list.append(type_of_elem)
 			end=1
 	return ''.join(reversed(type_list))
+	
+
+def get_size_and_type_of_multidim_array_in_reconstruction(dict_of_array):
+	dict_in_question=dict_of_array
+	if dict_in_question[0][0]=='pointer':
+		array_elem=dict_in_question[0][1]['type_of_pointed_element']
+	elif dict_in_question[0][0]=='array':
+		array_elem=dict_in_question[0][1]['type_of_array_element']
+	else:
+		print("Strange variable type......")
+		print(dict_in_question,dict_of_array)
+		sys.exit(-1)
+		
+	while is_typical_normal_var(array_elem[0][0])==False:
+		dict_in_question=array_elem
+		if dict_in_question[0][0]=='array':
+			array_elem=dict_in_question[0][1]['type_of_array_element']
+		else: #we allow the pointer to be on the first level only
+			print("Strange variable type......") 
+			print(dict_in_question,dict_of_array)
+			sys.exit(-1)
+		
+	return (dict_of_array[1],array_elem)
+	
+def get_name_of_multidim_array_in_variables(dict_of_array):
+	#sometimes they don't have a name . Eg pointer to pointer to pointer  or array of array of....
+	dict_in_question=dict_of_array
+	while dict_in_question[0][1]['name']=='':
+		dict_in_question[0][1]['type_of_array_element']
+	return dict_in_question[0][1]['name']
+	
+def get_name_of_multidim_array_in_ast_variables(n_of_arrayref):
+	n_in_question=n_of_arrayref
+	while isinstance(n_in_question,pycparser.c_ast.ArrayRef):
+		n_in_question=n_in_question.name
+	return n_in_question.name

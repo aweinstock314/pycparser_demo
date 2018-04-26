@@ -159,7 +159,7 @@ class CustomCGenerator(object):
 			(where_found,type_of_var,dict_of_array,name_of_array)=self.visit_StructRef(n.name,**kwargs)
 			is_global=0
 		else:
-			name_of_array=n.name.name
+			name_of_array=get_name_of_multidim_array_in_ast_variables(n)
 			is_global=0
 			#search in variables
 			(where_found,type_of_var,dict_of_array)=self.find_variable_in_fun_and_global_variables(self.name_of_fun_in_parsing,name_of_array)
@@ -192,16 +192,66 @@ class CustomCGenerator(object):
 		C_code_for_type_of_array_var=get_type_of_ast_dict(dict_of_array_var)
 		
 		if (is_typical_normal_var(type_of_array_var)==False):
-			print("ERROR: Not yet supported array subscript")
-			print(name_of_array,type_of_var,dict_of_array_var,dict_of_array,n)
-			sys.exit(-1)
+			if type_of_array_var=='array' and is_typical_normal_var(dict_of_array_var[0][1]['type_of_array_element'][0][0]):
+				#we have a 2 dimensional array
+				(sz_of_all,innermost_type_dict)=get_size_and_type_of_multidim_array_in_reconstruction(dict_of_array)
+				size_of_inner_array=dict_of_array_var[1]
+				left_array_ind=self.visit(n.name.subscript)
+				right_array_ind=self.visit(n.subscript)
+				type_of_array_var=innermost_type_dict[0][0]
+				C_code_for_type_of_array_var=get_type_of_ast_dict(innermost_type_dict)
+				#add indent for clearer (sort of) code
+				if True:
+					if True:
+						if True:
+							if True:
+								if True:
+									#here we are only talking for 2 dim arrays!
+									if (get_address_of_expr): #an "&" is before us
+										if (is_global==0):
+											#isarray==1
+											getter="get_address_of_stack_array_element"
+											return "(%s*)%s(%s,%s,%s*%s+%s)" % (C_code_for_type_of_array_var,getter,str(size_of_array_var),name_of_array,left_array_ind,size_of_inner_array,right_array_ind)
+										else:
+											#it is a global array, therefore it is replaced with a pointer with the same name
+											getter="get_address_of_sheap_array_element"
+											return "(%s*)%s(%s,GET_GLOBAL_PTR(globals.%s),%s*%s+%s)" % (C_code_for_type_of_array_var,getter,str(size_of_array_var),name_of_array,left_array_ind,size_of_inner_array,right_array_ind)
+
+
+
+									if (use_setter):
+										if (is_global==0):
+											setter=find_name_of_stack_array_setter(type_of_array_var)
+											#pay attention that we need an extra parenthesis
+											return "(%s)%s( %s , %s*%s+%s " % (C_code_for_type_of_array_var,setter,name_of_array,left_array_ind,size_of_inner_array,right_array_ind)
+										else:
+											#it is a global array, therefore it is replaced with a pointer with the same name
+											#pay attention that we need an extra parenthesis
+											setter=find_name_of_sheap_array_setter(type_of_array_var)
+											return "(%s)%s( GET_GLOBAL_PTR(globals.%s) , %s*%s+%s " % (C_code_for_type_of_array_var,setter,name_of_array,left_array_ind,size_of_inner_array,right_array_ind)
+									else:
+										#getter
+										if (is_global==1):
+											#it is a global array, therefore it is replaced with a pointer with the same name
+											getter=find_name_of_sheap_array_getter(type_of_array_var)
+											return "(%s)%s( GET_GLOBAL_PTR(globals.%s) , %s*%s+%s )" % (C_code_for_type_of_array_var,getter,name_of_array,left_array_ind,size_of_inner_array,right_array_ind)
+										else:
+											getter=find_name_of_stack_array_getter(type_of_array_var)
+											return "(%s)%s( %s , %s*%s+%s )" % (C_code_for_type_of_array_var,getter,name_of_array,left_array_ind,size_of_inner_array,right_array_ind)
+
+
+
+			else:
+				print("ERROR: Not yet supported array subscript")
+				print(name_of_array,type_of_var,dict_of_array_var,dict_of_array,n)
+				sys.exit(-1)
 		
 		if (size_of_array_var<0): #variable size
 			print("ERROR: Array element of variable size? Perhaps we have a cast?")
 			print(name_of_array,type_of_var,dict_of_array_var,dict_of_array,n)
 			sys.exit(-1)
 
-
+		#for 1 dim arrays!
 		if (get_address_of_expr): #an "&" is before us
 			if (is_global==0):
 				if (is_array==1):
@@ -933,10 +983,12 @@ class CustomCGenerator(object):
 		params_list=function_dict['fun_decl'][0][1]['list_of_arguments']
 		locals_list=function_dict['fun_locals']
 		for param in params_list:
-			if name_of_var==param[0][1]['name'] or (param[0][0]=="struct" and param[0][1]["name_of_struct_variable"]==name_of_var):
+			if (name_of_var==param[0][1]['name'] or (param[0][0]=="struct" and param[0][1]["name_of_struct_variable"]==name_of_var)
+			or (param[0][0]=="array" and get_name_of_multidim_array_in_variables(param)==name_of_var)):
 				return ("found_in_fun_params",param[0][1]['type'],param)
 		for local in locals_list:
-			if name_of_var==local[0][1]['name'] or (local[0][0]=="struct" and local[0][1]["name_of_struct_variable"]==name_of_var):
+			if (name_of_var==local[0][1]['name'] or (local[0][0]=="struct" and local[0][1]["name_of_struct_variable"]==name_of_var)
+			or (local[0][0]=="array" and get_name_of_multidim_array_in_variables(local)==name_of_var)):
 				return ("found_in_fun_locals",local[0][1]['type'],local)
 		return ("variable_not_found_in_fun_vars","variable_not_found_in_fun_vars",None)
 		
@@ -948,7 +1000,8 @@ class CustomCGenerator(object):
 				if decl[0][1]['name']==name_of_var or (decl[0][0]=="struct" and decl[0][1]["name_of_struct_variable"]==name_of_var):
 					return ("found_in_globals",decl[0][1]['type'],decl)
 			else:
-				if decl[0][1]['name']==name_of_var or (decl[0][0]=="struct" and decl[0][1]["name_of_struct_variable"]==name_of_var):
+				if (decl[0][1]['name']==name_of_var or (decl[0][0]=="struct" and decl[0][1]["name_of_struct_variable"]==name_of_var)
+				or (decl[0][0]=="array" and get_name_of_multidim_array_in_variables(decl)==name_of_var)):
 					return ("found_in_globals",decl[0][1]['type'],decl) #same thing basically...... hmm...
 		return ("variable_not_found_in_globals","variable_not_found_in_globals",None)
 		
@@ -1056,8 +1109,13 @@ class CustomCGenerator(object):
 					name_of_var=global_decl[0][1]["name_of_struct_variable"]
 					new_c_decl=('* '+name_of_var+'').join(original_c_decl.split(name_of_var,1)) #change the original c decl to be a pointer to what was there before
 				elif type_of_var=='array':
-					element_c_decl=get_type_of_ast_dict(global_decl[0][1]['type_of_array_element']) #use this or next line?
-					new_c_decl=original_c_decl.split(name_of_var,1)[0]+"* "+name_of_var #!!!!will this work?
+					if global_decl[0][1]['type_of_array_element'][0][0]!='array': #single dim array
+						element_c_decl=get_type_of_ast_dict(global_decl[0][1]['type_of_array_element']) #use this or next line?
+						new_c_decl=name_of_var.join(original_c_decl.split(name_of_var)[:-1])+"* "+name_of_var #!!!!will this work?
+					else:
+						#multidim array, make it single dim
+						(sz,array_type_dict)=get_size_and_type_of_multidim_array_in_reconstruction(global_decl)
+						new_c_decl=name_of_var.join(original_c_decl.split(name_of_var)[:-1])+"* "+name_of_var #!!!!will this work?
 							
 				s+='//ATTENTION: GLOBAL VARIABLE FOLLOWING! | SIZE: ptr'
 			else:
@@ -1069,6 +1127,7 @@ class CustomCGenerator(object):
 			#!!!attention: add support for typedefs etc!
 			global_def+=s
 		return global_def
+
 			
 
 os.system("./scrape_function_metadata.py "+sys.argv[1]+" >/dev/null")
