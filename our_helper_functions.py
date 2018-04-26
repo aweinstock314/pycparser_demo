@@ -241,6 +241,8 @@ def get_name_of_a_node(node):
 		return node.declname
 	elif isinstance(node,pycparser.c_ast.IdentifierType):
 		return node.names[0]
+	elif isinstance(node,pycparser.c_ast.FuncDecl):
+		return get_name_of_a_node(node.type)
 	elif isinstance(node, (pycparser.c_ast.ArrayDecl,pycparser.c_ast.PtrDecl)):
 		return "" #sometimes the parent does not have a name . Eg pointer to pointer to pointer ...
 	else:

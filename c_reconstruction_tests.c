@@ -9,7 +9,13 @@ struct lol
     int g4[4];
 };
 
-int main(int argc, char* argv[])
+
+void * smalloc(long bytes){
+	long lala;
+	return (&lala);
+}
+
+int main()
 {
 	unsigned int y=1;
 	int *p;
