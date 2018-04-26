@@ -84,9 +84,9 @@ class CustomCGenerator(object):
 
 		if (get_address_of_expr): #an "&" is before us
 			if (is_global==0):
-				return "(%s*)%s" % (C_code_for_type_of_var,n.name)
+				return "(%s*)get_address_of_stack_array_element(%s,%s)" % (C_code_for_type_of_var,str(dict_of_var[1]),n.name)
 			else:
-				return "(%s*)globals.%s" % (C_code_for_type_of_var,n.name)
+				return "((%s*)&globals.%s)" % (C_code_for_type_of_var,n.name)
  
 		retstr=''
 		if get_dereference_of_expression: #an "*" is before us
@@ -206,10 +206,11 @@ class CustomCGenerator(object):
 			if (is_global==0):
 				if (is_array==1):
 					getter="get_address_of_stack_array_element"
+					return "(%s*)%s(%s,%s,%s)" % (C_code_for_type_of_array_var,getter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
 				else:
 					#it's a pointer and has been malloc'ed
 					getter="get_address_of_sheap_array_element"
-				return "(%s*)%s(%s,GET_STACK_PTR(%s),%s)" % (C_code_for_type_of_array_var,getter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
+					return "(%s*)%s(%s,GET_STACK_PTR(%s),%s)" % (C_code_for_type_of_array_var,getter,str(size_of_array_var),name_of_array,self.visit(n.subscript))
 			else:
 				#it is a global array, therefore it is replaced with a pointer with the same name
 				getter="get_address_of_sheap_array_element"
