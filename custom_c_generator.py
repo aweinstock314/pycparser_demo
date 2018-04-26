@@ -458,7 +458,7 @@ class CustomCGenerator(object):
 			s+=' | HELPING ARGS FOR FUN CALL:' #+ nothing
 			kwargs["these_are_function_args"]=True #so as to replace ","'s with "@"'s. That is necessary in order for the next python script to distinguish between params and commas in params (splits in commas)
 			s+=' | PARAMETERS TO CALL WITH: ' + self.visit(n.args,**kwargs) +' }}}' # no newline
-			#{{{HEY PYTHON CALL FUNCTION WITH NEW TEMPLATE: <name_of_fun> | HELPING ARGS FOR FUN CALL: arg1="value1",arg2="value2",.. |PARAMETERS TO CALL WITH : param1,param2 ... }}}
+			#{{{HEY PYTHON CALL FUNCTION WITH NEWER TEMPLATE: <name_of_fun> | HELPING ARGS FOR FUN CALL: arg1="value1",arg2="value2",.. |PARAMETERS TO CALL WITH : param1,param2 ... }}}
 			return s
 			
 			
@@ -658,7 +658,7 @@ class CustomCGenerator(object):
 					if global_decl[0][0]=="struct":
 						name=global_decl[0][1]["name_of_struct_variable"]
 					#the global array/struct is declated as a pointer, lets malloc
-					s+='UPDATE_GLOBAL_VAR(globals.'+name+', {{{HEY PYTHON CALL FUNCTION WITH NEW TEMPLATE: smalloc | HELPING ARGS FOR FUN CALL:  |PARAMETERS TO CALL WITH : '+str(size_of_decl)+' }}});\n'
+					s+='UPDATE_GLOBAL_VAR(globals.'+name+', {{{HEY PYTHON CALL FUNCTION WITH NEWER TEMPLATE: smalloc | HELPING ARGS FOR FUN CALL:  |PARAMETERS TO CALL WITH : '+str(size_of_decl)+' }}});\n'
 				
 			
 			#init the global vars that ask for initialization
