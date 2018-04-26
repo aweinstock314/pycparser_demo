@@ -868,7 +868,7 @@ class CustomCGenerator(object):
 		if add_indent: self.indent_level -= 2
 
 		if typ in (
-				c_ast.Decl, c_ast.Assignment, c_ast.Cast, c_ast.UnaryOp,
+				c_ast.Assignment, c_ast.Cast, c_ast.UnaryOp, #c_ast.Decl was here too, but removed since we don't want code for them
 				c_ast.BinaryOp, c_ast.TernaryOp, c_ast.FuncCall, c_ast.ArrayRef,
 				c_ast.StructRef, c_ast.Constant, c_ast.ID, c_ast.Typedef,
 				c_ast.ExprList):
@@ -882,6 +882,8 @@ class CustomCGenerator(object):
 			# compute its own indentation.
 			#
 			return self.visit(n)
+		elif typ in (c_ast.Decl,):
+			return ''
 		else:
 			return indent + self.visit(n) + '\n'
 
