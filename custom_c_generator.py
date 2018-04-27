@@ -685,11 +685,11 @@ class CustomCGenerator(object):
 		start_of_ret="/* DEFINITION OF FUNCTION: "+ original_decl+ " */\n"
 		local_var_original_decl=self.get_original_declaration_of_locals(n)
 		start_of_ret+="/* LOCAL VARIABLES:\n"+local_var_original_decl+"*/\n"
-		start_of_ret+="START_OF_FUNCTION:"+self.name_of_fun_in_parsing+'\n'
+		start_of_ret+="START_OF_FUNCTION_"+self.name_of_fun_in_parsing+":"+self.name_of_fun_in_parsing+'\n'
 		body=self.add_function_locals_initialization(self.name_of_fun_in_parsing)
 		body += self.visit(n.body,you_are_body=True)
 		self.indent_level = 0
-		end_point_str="END_OF_FUNCTION:" + self.name_of_fun_in_parsing
+		end_point_str="END_OF_FUNCTION_"+self.name_of_fun_in_parsing+":" + self.name_of_fun_in_parsing+'\n'
 		if n.param_decls:
 			#!!! does not happen, but why? I can't find any case where param_decls exists
 			knrdecls = ';\n'.join(self.visit(p) for p in n.param_decls)
