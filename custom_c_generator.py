@@ -659,7 +659,7 @@ class CustomCGenerator(object):
 					if global_decl[0][0]=="struct":
 						name=global_decl[0][1]["name_of_struct_variable"]
 					#the global array/struct is declated as a pointer, lets malloc
-					s+='UPDATE_GLOBAL_VAR(globals.'+name+', {{{HEY PYTHON CALL FUNCTION WITH NEWER TEMPLATE: smalloc | HELPING ARGS FOR FUN CALL:  |PARAMETERS TO CALL WITH : '+str(size_of_decl)+' }}});\n'
+					s+='UPDATE_GLOBAL_VAR(globals.'+name+', {{{HEY PYTHON CALL FUNCTION WITH NEW TEMPLATE: smalloc | HELPING ARGS FOR FUN CALL:  |PARAMETERS TO CALL WITH : '+str(size_of_decl)+' }}});\n'
 				
 			
 			#init the global vars that ask for initialization
