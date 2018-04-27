@@ -645,8 +645,8 @@ class CustomCGenerator(object):
 		!!!probably that will be done on the fly, since we have the parse tree	  
 		'''
 		s+='\n'
-		s+='//Allocation of global arrays/structs, if any, and initialization of globals\n'
 		if (self.name_of_fun_in_parsing=='main'):
+			s+='//Allocation of global arrays/structs, if any, and initialization of globals\n'
 			#malloc global arrays
 			for global_decl in global_decls:
 				if global_decl[0][0]=="array" or (global_decl[0][0]=="struct" and "name_of_struct_variable" in global_decl[0][1] and global_decl[0][1]["name_of_struct_variable"]):
