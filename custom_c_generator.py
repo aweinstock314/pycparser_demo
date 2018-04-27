@@ -89,6 +89,7 @@ class CustomCGenerator(object):
 				return "((%s*)&globals.%s)" % (C_code_for_type_of_var,n.name)
  
 		retstr=''
+		used_setter_for_dereference=False
 		if get_dereference_of_expression: #an "*" is before us
 			if dict_of_var[0][0]!='pointer':
 				print("Got dereference on a non-pointer!")
@@ -484,7 +485,7 @@ class CustomCGenerator(object):
 			return '(%s)' % self.visit(n.expr,**kwargs)
 		elif n.op == '*': #!!!!!!!!!!!!! sos fix this, does not work for pointer arithmetic. Will need to see what type the expr is
 			kwargs["get_dereference_of_expr"]=True 
-			return '(%s)' % self.visit(n.expr,**kwargs)
+			return '%s' % self.visit(n.expr,**kwargs)
 		else:
 			return '%s%s' % (n.op, operand) #!!!!! cast?
 
