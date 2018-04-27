@@ -210,6 +210,44 @@ def find_name_of_setter_from_arb_memory_position(type_of_var_full):
 	return name_of_setter
 
 
+def find_name_of_getter_from_arb_address_no_offset(type_of_var_full):
+	type_of_var=''.join(type_of_var_full.split("unsigned ",1)) #remove unsigned
+	name_of_getter='get_'
+	if( type_of_var=='long' or type_of_var=='long int'):
+		name_of_getter+='long_int'
+	if ( type_of_var=='pointer' or type_of_var=='ptr'):
+		name_of_getter+='pointer'
+	if ( type_of_var=='int'):
+		name_of_getter+='int'
+	if ( type_of_var=='float'):
+		name_of_getter+='float'
+	if ( type_of_var=='double'):
+		name_of_getter+='double'
+	if ( type_of_var=='char'):
+		name_of_getter+='char'
+	name_of_getter+='_from_arb_address_no_offset'
+	return name_of_getter
+
+
+def find_name_of_setter_from_arb_address_no_offset(type_of_var_full):
+	type_of_var=''.join(type_of_var_full.split("unsigned ",1)) #remove unsigned
+	name_of_setter='set_'
+	if( type_of_var=='long' or type_of_var=='long int'):
+		name_of_setter+='long_int'
+	if ( type_of_var=='pointer' or type_of_var=='ptr'):
+		name_of_setter+='pointer'
+	if ( type_of_var=='int'):
+		name_of_setter+='int'
+	if ( type_of_var=='float'):
+		name_of_setter+='float'
+	if ( type_of_var=='double'):
+		name_of_setter+='double'
+	if ( type_of_var=='char'):
+		name_of_setter+='char'
+	name_of_setter+='_from_arb_address_no_offset'
+	return name_of_setter
+
+
 #function to print well a dictionary. Thanks https://stackoverflow.com/a/21049038
 def wellprint_dict(obj, nested_level=0, output=sys.stdout):
 	spacing = '   '

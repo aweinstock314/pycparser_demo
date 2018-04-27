@@ -100,18 +100,18 @@ class CustomCGenerator(object):
 			if use_setter==False:
 				used_setter_for_dereference=False
 				if (is_global==0):
-					getter=find_name_of_simple_getter(type_of_pointed_elem_dict[0][0])
+					getter=find_name_of_getter_from_arb_address_no_offset(type_of_pointed_elem_dict[0][0])
 					retstr+="(%s)%s( " % (C_code_for_type_of_pointed_var,getter)
 				else:
-					getter=find_name_of_global_getter(type_of_pointed_elem_dict[0][0])
+					getter=find_name_of_getter_from_arb_address_no_offset(type_of_pointed_elem_dict[0][0])
 					retstr+="(%s)%s( " % (C_code_for_type_of_pointed_var,getter)
 			else:
 				if (is_global==0):
-					setter=find_name_of_simple_setter(type_of_pointed_elem_dict[0][0])
+					setter=find_name_of_setter_from_arb_address_no_offset(type_of_pointed_elem_dict[0][0])
 					#pay attention that we need an extra parenthesis
 					retstr+="(%s)%s( " % (C_code_for_type_of_pointed_var,setter)
 				else:
-					setter=find_name_of_global_setter(type_of_pointed_elem_dict[0][0])
+					setter=find_name_of_setter_from_arb_address_no_offset(type_of_pointed_elem_dict[0][0])
 					#pay attention that we need an extra parenthesis
 					retstr+="(%s)%s( " % (C_code_for_type_of_pointed_var,setter)
 				used_setter_for_dereference=True
