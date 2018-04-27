@@ -3,3 +3,5 @@ ast_of_original_c_code
 a.out
 tmptmp*
 semantic_data
+1st_pass_of_C_reconstruction_of_tests.c
+tests_for_stack_commands_supporting_ast_parsing.c
