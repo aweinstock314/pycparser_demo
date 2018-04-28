@@ -470,11 +470,21 @@ class CustomCGenerator(object):
 			#return '%s++' % operand
 			kwargs["use_setter_param"]=True
 			new_operand=self._parenthesize_unless_simple(n.expr,**kwargs)
+			if isinstance(n.expr,c_ast.UnaryOp) and n.expr.op=="*" and isinstance(n.expr.expr,c_ast.ID):
+				#we must not parenthesize, it will break the arguments of the getters/setters, the function args will end before they are set
+				#(of course we have the assumption that what will follow will be an ID)
+				kwargs["use_setter_param"]=False;operand=self.visit(n.expr,**kwargs)
+				kwargs["use_setter_param"]=True;new_operand=self.visit(n.expr,**kwargs)
 			return '%s,%s+1)' % (new_operand,operand)
 		elif n.op == 'p--' or n.op=="--":
 			#return '%s--' % operand
 			kwargs["use_setter_param"]=True
 			new_operand=self._parenthesize_unless_simple(n.expr,**kwargs)
+			if isinstance(n.expr,c_ast.UnaryOp) and n.expr.op=="*" and isinstance(n.expr.expr,c_ast.ID):
+				#we must not parenthesize, it will break the arguments of the getters/setters, the function args will end before they are set
+				#(of course we have the assumption that what will follow will be an ID)
+				kwargs["use_setter_param"]=False;operand=self.visit(n.expr,**kwargs)
+				kwargs["use_setter_param"]=True;new_operand=self.visit(n.expr,**kwargs)
 			return '%s,%s-1)' % (new_operand,operand)
 		elif n.op == 'sizeof':
 			# Always parenthesize the argument of sizeof since it can be
