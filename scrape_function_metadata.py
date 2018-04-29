@@ -4,6 +4,7 @@ import pycparser.c_parser
 import copy
 import sys
 import pickle
+import os
 
 sys.dont_write_bytecode = True #we don't want these .pyc files!
 
@@ -191,5 +192,6 @@ semantic_dict["global_decls"]=global_decls
 semantic_dict["typedefs"]=typedefs
 semantic_dict["all_structs"]=all_structs_dict
 semantic_dict["global_decl_names"]=global_decl_names
-pickle.dump( semantic_dict, open( "semantic_data", "wb" ) )
+working_dir=os.getcwd()
+pickle.dump( semantic_dict, open( working_dir+"/semantic_data", "wb" ) )
 

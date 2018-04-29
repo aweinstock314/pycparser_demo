@@ -37,7 +37,7 @@ class CustomCGenerator(object):
 		self.name_of_fun_in_parsing=""
 		
 		#get the semantic data
-		with open('semantic_data', 'rb') as f:
+		with open(working_dir+'/semantic_data', 'rb') as f:
 			semantic_dict=pickle.load(f)
 			self.functions=semantic_dict['functions']
 			self.typedefs=semantic_dict['typedefs']
@@ -1142,8 +1142,8 @@ class CustomCGenerator(object):
 		return global_def
 
 			
-
-os.system("./scrape_function_metadata.py "+sys.argv[1]+" >/dev/null")
+working_dir=os.getcwd()
+os.system(working_dir+"/scrape_function_metadata.py "+sys.argv[1]+" >/dev/null")
 ast = pycparser.parse_file(sys.argv[1],use_cpp=True)
 custom_c_generator=CustomCGenerator()
 original_c_lines=custom_c_generator.visit(ast)
