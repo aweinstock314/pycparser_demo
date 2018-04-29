@@ -655,7 +655,7 @@ class CustomCGenerator(object):
 		!!!probably that will be done on the fly, since we have the parse tree	  
 		'''
 		s+='\n'
-		if (self.name_of_fun_in_parsing=='main'):
+		if (self.name_of_fun_in_parsing=='tests_that_use_pycparser_ast_main'):
 			s+='//Allocation of global arrays/structs, if any, and initialization of globals\n'
 			#malloc global arrays
 			for global_decl in global_decls:
