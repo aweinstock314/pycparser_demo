@@ -6,14 +6,16 @@ struct node{
 
 
 struct node a_node;
+struct node * array_of_nodes[10];
 
 
 int tests_that_use_pycparser_ast_main()
 {
     struct node * head;
     struct node *tmp;
-    int i;
+    int i,j;
 
+    /*
     head=&a_node;
 
     head->value=2.0;
@@ -22,16 +24,23 @@ int tests_that_use_pycparser_ast_main()
     
     for (i=0;i<10;i++) 
         head=head->next;
-
-    head=0;
-    for (i=0;i<10;i++) 
+    */
+    
+    
+    for (j=0;j<10;j++)
     {
-        tmp=smalloc(sizeof(struct_node));
-        tmp->value=2.0;
-        tmp->index=3;
-        tmp->next=head;
-        head=tmp;
+        head=0; //NULL
+        for (i=0;i<3;i++) 
+        {
+            tmp=smalloc(sizeof(struct_node));
+            tmp->value=2.0;
+            tmp->index=3;
+            tmp->next=head;
+            head=tmp;
+        }
+        array_of_nodes[j]=head;
     }
+    
 
     return 0;
 }
