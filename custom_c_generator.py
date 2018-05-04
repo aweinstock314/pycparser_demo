@@ -86,7 +86,11 @@ class CustomCGenerator(object):
 			if (is_global==0):
 				return "(%s*)get_address_of_stack_array_element(%s,%s)" % (C_code_for_type_of_var,str(dict_of_var[1]),n.name)
 			else:
-				return "((%s*)&globals.%s)" % (C_code_for_type_of_var,n.name)
+				#check if it is a pointer because of array/struct
+				if dict_of_var[0][0]=='array' or dict_of_var[0][0]=='struct':
+					return "((%s*)globals.%s)" % (C_code_for_type_of_var,n.name)
+				else:
+					return "((%s*)&globals.%s)" % (C_code_for_type_of_var,n.name)
  
 		retstr=''
 		used_setter_for_dereference=False
@@ -1104,6 +1108,16 @@ class CustomCGenerator(object):
 		'''
 		global_decls=self.global_decls
 		global_def=''
+		
+		#add the struct declarations
+		global_def='\n'
+		global_def+='/*Struct declarations by pycparser*/\n'
+		for struct_decl in self.all_structs:
+			global_def+=get_original_C_code_of_ast(self.all_structs[struct_decl][0][1]['ast_of_last_proper_Decl'])+'\n'
+		global_def+='\n'
+		global_def+='/*End of struct declarations by pycparser*/\n'
+		global_def+='\n'
+		
 		for global_decl in global_decls:
 			name_of_var=global_decl[0][1]['name']
 			ast_of_last_decl=global_decl[0][1]['ast_of_last_proper_Decl']
@@ -1140,6 +1154,7 @@ class CustomCGenerator(object):
 			s+=new_c_decl+';\n'
 			#!!!attention: add support for typedefs etc!
 			global_def+=s
+					
 		return global_def
 
 			
