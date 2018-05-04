@@ -456,8 +456,11 @@ class CustomCGenerator(object):
 	def visit_FuncCall(self, n,**kwargs):
 		fref = self._parenthesize_unless_simple(n.name)
 		if (fref not in self.functions):
-			#our function is not one of the defined ones. It might be printf() or something else
-			return fref + '(' + self.visit(n.args) + ')'
+			if fref=='smalloc':
+				return '{{{HEY PYTHON CALL FUNCTION WITH NEW TEMPLATE: smalloc | HELPING ARGS FOR FUN CALL:  |PARAMETERS TO CALL WITH : '+str(self.visit(n.args))+' }}}'
+			else:	
+				#our function is not one of the defined ones. It might be printf() or something else
+				return fref + '(' + self.visit(n.args) + ')'
 		else:
 			s=''
 			s+='{{{ HEY PYTHON CALL FUNCTION WITH NEWER TEMPLATE:' + str(fref)
